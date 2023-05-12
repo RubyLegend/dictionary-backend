@@ -46,5 +46,6 @@ func main() {
   router.POST("/api/v1/quiz/:quizId", routes.QuizPost)
   router.GET("/api/v1/quiz/status", routes.QuizGetStatus)
 
+  log.Println("Server started at http://localhost:8080")
   log.Fatal(http.ListenAndServe(":8080", router))
 }

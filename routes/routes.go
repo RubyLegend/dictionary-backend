@@ -3,6 +3,9 @@ package routes
 import (
   "fmt"
   "net/http"
+  "log"
+
+  "github.com/RubyLegend/dictionary-backend/helpers/users"
 
   "github.com/julienschmidt/httprouter"
 )
@@ -43,8 +46,16 @@ func TranslationPatch(w http.ResponseWriter, r *http.Request, _ httprouter.Param
   fmt.Fprintf(w, "Not Implemented\n")
 }
 
-func UserLogin(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
-  fmt.Fprintf(w, "Not Implemented\n")
+func UserLogin(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+  r.ParseForm()
+  if r.Form["username"] == nil {
+    fmt.Fprintf(w, "Username not provided. Cannot authorize.\n")
+  } else {
+    token, err := users.GenerateJWT(r.Form["username"][0])
+    fmt.Fprintf(w, "Token: " + token + "\n")
+    fmt.Fprintf(w, "Errors: %v\n", err)
+  }
+  fmt.Fprintf(w, "Under Construction\n")
 }
 
 func UserSignup(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
@@ -56,7 +67,24 @@ func UserLogout(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 }
 
 func UserStatus(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
-  fmt.Fprintf(w, "Not Implemented\n")
+  if r.Header["Authorization"] == nil {
+    fmt.Fprintf(w, "Authorization header not found.\n")
+  } else {
+    tokenString := r.Header["Authorization"][0]
+    log.Println("Supplied token: " + tokenString)
+    if ok := users.VerifyAuthorizationToken(tokenString); !ok {
+      log.Println("Token doesn't start with 'Bearer '. Token incorrect.")
+    } else { 
+      tokenClear := tokenString[7:]
+      claims, err := users.VerifyJWT(tokenClear)
+      if err != nil {
+        log.Println("Errors while parsing token.")
+      } else {
+        fmt.Fprintf(w, claims + "\n")
+      }
+    }
+  }
+  fmt.Fprintf(w, "Under Construction\n")
 }
 
 func UserRestoreUsername(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
