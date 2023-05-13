@@ -6,6 +6,8 @@ import (
   "fmt"
   "log"
 
+  userRepo "github.com/RubyLegend/dictionary-backend/repository/users"
+
   jwt "github.com/golang-jwt/jwt/v5"
 )
 
@@ -68,4 +70,19 @@ func VerifyJWT(tokenString string) (string, error) {
 
 func VerifyAuthorizationToken(tokenString string) bool {
   return strings.HasPrefix(tokenString, "Bearer ")
+}
+
+func VerifyCredentials(userData userRepo.User) (error) {
+  user := userRepo.GetUser(userData)
+  log.Println(user)
+
+  if user.Username != userData.Username {
+    return fmt.Errorf("User not found.")
+  }
+
+  if user.Password == userData.Password {
+    return nil
+  }
+
+  return fmt.Errorf("Password incorrect.")
 }
