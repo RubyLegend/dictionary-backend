@@ -4,6 +4,8 @@ import (
   "time"
   "log"
   "errors"
+  "fmt"
+  "bytes"
 )
 
 type User struct {
@@ -26,6 +28,23 @@ func checkUserExistance(userData User) (error) {
   }
 
   return nil
+}
+
+func validation(userData User) {
+  var buf bytes.Buffer
+  if(len(userData.Username) == 0){
+    buf.WriteString("Username is required field\n")
+  } 
+  if(len(userData.Email) == 0){
+    buf.WriteString("Email is required field\n")
+  }
+  if(len(userData.Password) == 0){
+    buf.WriteString("Password is required field\n")
+  }
+  if buf.Len() > 0 {
+    fmt.Println(buf.String())
+  }
+  // return 
 }
 
 func findUser(userData User) (int, error) {
@@ -51,6 +70,10 @@ func GetUser(userData User) User {
 }
 
 func AddUser(userData User) (error) {
+
+  // request validation
+  validation(userData)
+  
   err := checkUserExistance(userData)
   if err == nil {
     lastElementIndex := len(Users) - 1
