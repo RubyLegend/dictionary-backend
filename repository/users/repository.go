@@ -34,7 +34,6 @@ func validation(userData User) {
   var buf bytes.Buffer
   if(len(userData.Username) == 0){
     buf.WriteString("Username is required field\n")
-
   } 
   if(len(userData.Email) == 0){
     buf.WriteString("Email is required field\n")
@@ -45,7 +44,7 @@ func validation(userData User) {
   if buf.Len() > 0 {
     fmt.Println(buf.String())
   }
-  return 
+  // return 
 }
 
 func findUser(userData User) (int, error) {
