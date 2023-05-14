@@ -33,20 +33,21 @@ import (
   }
   
   func UserSignup(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
-	var userData userRepo.User
-	_ = json.NewDecoder(r.Body).Decode(&userData)
-	log.Println("Decoded Data:", userData)
-	
-	err := userRepo.AddUser(userData)
-  
-	if err != nil {
-	  log.Println(err)
-	  fmt.Fprintf(w, "%s", err)
-	} else {
-	  fmt.Fprintf(w, "User added successfully\n")
-	}
-  
-	fmt.Fprintf(w, "Under Construction\n")
+    fmt.Println("Hello, World!")
+    var userData userRepo.User
+    _ = json.NewDecoder(r.Body).Decode(&userData)
+    log.Println("Decoded Data:", userData)
+    
+    err := userRepo.AddUser(userData)
+    
+    if err != nil {
+      log.Println(err)
+      fmt.Fprintf(w, "%s", err)
+    } else {
+      fmt.Fprintf(w, "User added successfully\n")
+    }
+    
+    fmt.Fprintf(w, "Under Construction\n")
   }
   
   func UserLogout(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
