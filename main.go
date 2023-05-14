@@ -7,6 +7,12 @@ import (
   "github.com/julienschmidt/httprouter"
 
   "github.com/RubyLegend/dictionary-backend/routes"
+  "github.com/RubyLegend/dictionary-backend/routes/user"
+  "github.com/RubyLegend/dictionary-backend/routes/word"
+  "github.com/RubyLegend/dictionary-backend/routes/translation"
+  "github.com/RubyLegend/dictionary-backend/routes/dictionary"
+  "github.com/RubyLegend/dictionary-backend/routes/history"
+  "github.com/RubyLegend/dictionary-backend/routes/quiz"
 )
 
 func main() {
@@ -15,36 +21,36 @@ func main() {
 
   router.GET("/", routes.Index)
 
-  router.POST("/api/v1/word", routes.WordPost)
-  router.DELETE("/api/v1/word/:id", routes.WordDelete)
-  router.GET("/api/v1/word", routes.WordGet)
-  router.PATCH("/api/v1/word/:id", routes.WordPatch)
+  router.POST("/api/v1/word", wordRoutes.WordPost)
+  router.DELETE("/api/v1/word/:id", wordRoutes.WordDelete)
+  router.GET("/api/v1/word", wordRoutes.WordGet)
+  router.PATCH("/api/v1/word/:id", wordRoutes.WordPatch)
 
-  router.POST("/api/v1/translation", routes.TranslationPost)
-  router.DELETE("/api/v1/translation/:id", routes.TranslationDelete)
-  router.GET("/api/v1/translation", routes.TranslationGet)
-  router.PATCH("/api/v1/translation/:id", routes.TranslationPatch)
+  router.POST("/api/v1/translation", translationRoutes.TranslationPost)
+  router.DELETE("/api/v1/translation/:id", translationRoutes.TranslationDelete)
+  router.GET("/api/v1/translation", translationRoutes.TranslationGet)
+  router.PATCH("/api/v1/translation/:id", translationRoutes.TranslationPatch)
 
-  router.POST("/api/v1/user/login", routes.UserLogin)
-  router.POST("/api/v1/user/signup", routes.UserSignup)
-  router.POST("/api/v1/user/logout", routes.UserLogout)
-  router.GET("/api/v1/user/status", routes.UserStatus)
-  router.POST("/api/v1/user/restore-username", routes.UserRestoreUsername)
-  router.POST("/api/v1/user/restore-password", routes.UserRestorePassword)
-  router.DELETE("/api/v1/user", routes.UserDelete)
-  router.PATCH("/api/v1/user", routes.UserPatch)
+  router.POST("/api/v1/user/login", userRoutes.UserLogin)
+  router.POST("/api/v1/user/signup", userRoutes.UserSignup)
+  router.POST("/api/v1/user/logout", userRoutes.UserLogout)
+  router.GET("/api/v1/user/status", userRoutes.UserStatus)
+  router.POST("/api/v1/user/restore-username", userRoutes.UserRestoreUsername)
+  router.POST("/api/v1/user/restore-password", userRoutes.UserRestorePassword)
+  router.DELETE("/api/v1/user", userRoutes.UserDelete)
+  router.PATCH("/api/v1/user", userRoutes.UserPatch)
   
-  router.GET("/api/v1/dictionary", routes.DictionaryGet)
-  router.POST("/api/v1/dictionary", routes.DictionaryPost)
-  router.PATCH("/api/v1/dictionary/:id", routes.DictionaryPatch)
-  router.DELETE("/api/v1/dictionary/:id", routes.DictionaryDelete)
+  router.GET("/api/v1/dictionary", dictionaryRoutes.DictionaryGet)
+  router.POST("/api/v1/dictionary", dictionaryRoutes.DictionaryPost)
+  router.PATCH("/api/v1/dictionary/:id", dictionaryRoutes.DictionaryPatch)
+  router.DELETE("/api/v1/dictionary/:id", dictionaryRoutes.DictionaryDelete)
 
-  router.GET("/api/v1/history", routes.HistoryGet)
-  router.DELETE("/api/v1/history", routes.HistoryDelete)
+  router.GET("/api/v1/history", historyRoutes.HistoryGet)
+  router.DELETE("/api/v1/history", historyRoutes.HistoryDelete)
 
-  router.GET("/api/v1/quiz/new", routes.QuizGetNew)
-  router.POST("/api/v1/quiz/:quizId", routes.QuizPost)
-  router.GET("/api/v1/quiz/status", routes.QuizGetStatus)
+  router.GET("/api/v1/quiz/new", quizRoutes.QuizGetNew)
+  router.POST("/api/v1/quiz/:quizId", quizRoutes.QuizPost)
+  router.GET("/api/v1/quiz/status", quizRoutes.QuizGetStatus)
 
   log.Println("Server started at http://localhost:8080")
   log.Fatal(http.ListenAndServe(":8080", router))
