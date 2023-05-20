@@ -48,7 +48,7 @@ func validation(userData User) ([]error) {
 
 func findUser(params ...interface{}) (int, error) {
   userData, ok := params[0].(User)
-  if ok == true {
+  if ok {
     for i, v := range Users {
      if v.Email == userData.Email ||
         v.Username == userData.Username {
@@ -57,7 +57,7 @@ func findUser(params ...interface{}) (int, error) {
      }
   } else {
     username, ok := params[0].(string)
-    if ok == true {
+    if ok {
       for i, v := range Users {
        if v.Username == username {
             return i, nil
@@ -88,13 +88,7 @@ func AddUser(userData User) ([]error) {
   // request validation
   err = append(err, validation(userData)...)
   
-  err2 := checkUserExistance(userData)
-
-  if err2 != nil {
-    for _, v := range err2 {
-      err = append(err, v)
-    }
-  }
+  err = append(err, checkUserExistance(userData)...)
 
   if err == nil {
     lastElementIndex := len(Users) - 1
@@ -140,13 +134,11 @@ func EditUser(currentUsername string, userData User) []error {
 
     err2 := checkUserExistance(userData)
 
-    if err2 != nil {
-      for _, v := range err2 {
-        if v.Error() == "Email already registered." && user.Email != userData.Email {
-          err = append(err, v)
-        } else if v.Error() == "Username already registere." && user.Username != userData.Username {
-          err = append(err, v)
-        }
+    for _, v := range err2 {
+      if v.Error() == "Email already registered." && user.Email != userData.Email {
+        err = append(err, v)
+      } else if v.Error() == "Username already registere." && user.Username != userData.Username {
+        err = append(err, v)
       }
     }
   

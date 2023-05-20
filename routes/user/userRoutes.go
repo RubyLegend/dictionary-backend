@@ -5,7 +5,6 @@ import (
 	"net/http"
 	"encoding/json"
   "errors"
-  "log"
   
 	userHelper "github.com/RubyLegend/dictionary-backend/middleware/users"
 	userRepo "github.com/RubyLegend/dictionary-backend/repository/users"
