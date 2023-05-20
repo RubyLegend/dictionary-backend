@@ -4,8 +4,6 @@ import (
   "time"
   "log"
   "errors"
-  "fmt"
-  "bytes"
 )
 
 type User struct {
@@ -18,63 +16,80 @@ type User struct {
 
 var Users []User
 
-func checkUserExistance(userData User) (error) {
+func checkUserExistance(userData User) ([]error) {
+  var Errors []error
   for _, v := range Users {
     if v.Email == userData.Email {
-      return errors.New("Email already registered.")
-    } else if v.Username == userData.Username {
-      return errors.New("Username already registered.")
+      Errors = append(Errors, errors.New("Email already registered."))
+    }
+    if v.Username == userData.Username {
+      Errors = append(Errors, errors.New("Username already registered."))
     }
   }
 
-  return nil
+  return Errors
 }
 
-func validation(userData User) {
-  var buf bytes.Buffer
+func validation(userData User) ([]error) {
+  var err []error
+
   if(len(userData.Username) == 0){
-    buf.WriteString("Username is required field\n")
+    err = append(err, errors.New("Username is required field"))
   } 
   if(len(userData.Email) == 0){
-    buf.WriteString("Email is required field\n")
+    err = append(err, errors.New("Email is required field"))
   }
   if(len(userData.Password) == 0){
-    buf.WriteString("Password is required field\n")
+    err = append(err, errors.New("Password is required field"))
   }
-  if buf.Len() > 0 {
-    fmt.Println(buf.String())
-  }
-  // return 
+
+  return err
 }
 
-func findUser(userData User) (int, error) {
-  for i, v := range Users {
-    if v.Email == userData.Email ||
-       v.Username == userData.Username {
-         return i, nil
+func findUser(params ...interface{}) (int, error) {
+  userData, ok := params[0].(User)
+  if ok {
+    for i, v := range Users {
+     if v.Email == userData.Email ||
+        v.Username == userData.Username {
+          return i, nil
+        }
+     }
+  } else {
+    username, ok := params[0].(string)
+    if ok {
+      for i, v := range Users {
+       if v.Username == username {
+            return i, nil
+          }
        }
+    } else {
+      return -1, errors.New("Unknown parameter passed")
+    }
   }
 
   return -1, errors.New("User not found")
 }
 
-func GetUser(userData User) User {
+func GetUser(userData User) (User, error) {
   realUserId, err := findUser(userData)
 
   if err != nil {
     log.Println(err)
-    return User{}
+    return User{}, err
   }
 
-  return Users[realUserId]
+  return Users[realUserId], nil
 }
 
-func AddUser(userData User) (error) {
+func AddUser(userData User) ([]error) {
+  var err []error
 
   // request validation
-  validation(userData)
+  err = append(err, validation(userData)...)
   
-  err := checkUserExistance(userData)
+  err = append(err, checkUserExistance(userData)...)
+
   if err == nil {
     lastElementIndex := len(Users) - 1
     if lastElementIndex < 0 {
@@ -91,13 +106,50 @@ func AddUser(userData User) (error) {
   }
 }
 
-func DeleteUser(userData User) (bool, error) {
+func DeleteUser(userData User) error {
   i, err := findUser(userData)
   
-  if err != nil {
-    Users = append(Users[:i], Users[i+1])
-    return true, nil
+  log.Println(i, err)
+
+  if err == nil {
+    Users = append(Users[:i], Users[i+1:]...)
+    log.Println(Users)
+    return nil
   }
 
-  return false, err
+  return err
+}
+
+func EditUser(currentUsername string, userData User) []error {
+  var err []error
+  // request validation
+  err = append(err, validation(userData)...)
+  
+  i, err2 := findUser(currentUsername)
+  
+  if err2 != nil {
+    err = append(err, err2)
+  } else {
+    user := Users[i]
+
+    err2 := checkUserExistance(userData)
+
+    for _, v := range err2 {
+      if v.Error() == "Email already registered." && user.Email != userData.Email {
+        err = append(err, v)
+      } else if v.Error() == "Username already registere." && user.Username != userData.Username {
+        err = append(err, v)
+      }
+    }
+  
+    if err == nil {
+      userData.CreatedAt = user.CreatedAt
+      temp := append([]User{}, Users[:i]...)
+      temp = append(temp, userData)
+      Users = append(temp, Users[i+1:]...)
+      return nil
+    }
+  }
+
+  return err
 }
