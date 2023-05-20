@@ -4,8 +4,6 @@ import (
   "time"
   "log"
   "errors"
-  "fmt"
-  "bytes"
 )
 
 type User struct {
@@ -30,21 +28,20 @@ func checkUserExistance(userData User) (error) {
   return nil
 }
 
-func validation(userData User) {
-  var buf bytes.Buffer
+func validation(userData User) ([]error) {
+  var err []error
+
   if(len(userData.Username) == 0){
-    buf.WriteString("Username is required field\n")
+    err = append(err, errors.New("Username is required field"))
   } 
   if(len(userData.Email) == 0){
-    buf.WriteString("Email is required field\n")
+    err = append(err, errors.New("Email is required field"))
   }
   if(len(userData.Password) == 0){
-    buf.WriteString("Password is required field\n")
+    err = append(err, errors.New("Password is required field"))
   }
-  if buf.Len() > 0 {
-    fmt.Println(buf.String())
-  }
-  // return 
+
+  return err
 }
 
 func findUser(userData User) (int, error) {
@@ -69,12 +66,18 @@ func GetUser(userData User) User {
   return Users[realUserId]
 }
 
-func AddUser(userData User) (error) {
+func AddUser(userData User) ([]error) {
+  var err []error
 
   // request validation
-  validation(userData)
+  err = append(err, validation(userData)...)
   
-  err := checkUserExistance(userData)
+  err2 := checkUserExistance(userData)
+
+  if err2 != nil {
+    err = append(err, err2)
+  }
+
   if err == nil {
     lastElementIndex := len(Users) - 1
     if lastElementIndex < 0 {
@@ -94,8 +97,8 @@ func AddUser(userData User) (error) {
 func DeleteUser(userData User) (bool, error) {
   i, err := findUser(userData)
   
-  if err != nil {
-    Users = append(Users[:i], Users[i+1])
+  if err == nil {
+    Users = append(Users[:i], Users[i+1:]...)
     return true, nil
   }
 

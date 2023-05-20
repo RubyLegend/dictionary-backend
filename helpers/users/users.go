@@ -37,7 +37,7 @@ func GenerateJWT(username string) (string, error) {
 }
 
 func VerifyJWT(tokenString string) (string, error) {
-  token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
+  token, err := jwt.Parse(tokenString, func(token *jwt.Token) (any, error) {
     if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
       log.Println("Token failed parsing on signing method.")
       return nil, fmt.Errorf("Token failed parsing.")
@@ -72,17 +72,17 @@ func VerifyAuthorizationToken(tokenString string) bool {
   return strings.HasPrefix(tokenString, "Bearer ")
 }
 
-func VerifyCredentials(userData userRepo.User) (error) {
+func VerifyCredentials(userData userRepo.User) (userRepo.User, error) {
   user := userRepo.GetUser(userData)
-  log.Println(user)
 
   if user.Username != userData.Username {
-    return fmt.Errorf("User not found.")
+    return userRepo.User{}, fmt.Errorf("User not found.")
   }
 
   if user.Password == userData.Password {
-    return nil
+    user.Password = ""
+    return user, nil
   }
 
-  return fmt.Errorf("Password incorrect.")
+  return userRepo.User{}, fmt.Errorf("Password incorrect.")
 }
