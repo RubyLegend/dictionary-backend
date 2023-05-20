@@ -19,15 +19,15 @@ type Word struct {
 var Words []Word
 
 
-func checkWordExistance(words Word) (error) {
-	for _, v := range Words {
-	  if v.Name == words.Name {
+// func checkWordExistance(words Word) (error) {
+// 	for _, v := range Words {
+// 	  if v.Name == words.Name {
 		
-	  } 
-	}
+// 	  } 
+// 	}
   
-	return nil
-  }
+// 	return nil
+//   }
 
 
 func AddWord(wordsData Word) {
