@@ -16,6 +16,8 @@ var secretKey = []byte("sampleSecretKeyYouShouldNeverShare")
 
 var expirationTime = 10 // minutes
 
+var loggedOut = make([]string, 0)
+
 func GenerateJWT(username string) (string, error) {
   token := jwt.New(jwt.SigningMethodHS512)
   currentTime := time.Now()
@@ -68,8 +70,17 @@ func getClaims(tokenString string) (jwt.MapClaims, error) {
   return claims, nil
 }
 
-func verifyAuthorizationToken(tokenString string) bool {
+func VerifyAuthorizationToken(tokenString string) bool {
   return strings.HasPrefix(tokenString, "Bearer ")
+}
+
+func contains(elems []string, v string) bool {
+    for _, s := range elems {
+        if v == s {
+            return true
+        }
+    }
+    return false
 }
 
 func VerifyJWT(w http.ResponseWriter, r *http.Request, resp map[string]any) (jwt.MapClaims) {
@@ -79,24 +90,60 @@ func VerifyJWT(w http.ResponseWriter, r *http.Request, resp map[string]any) (jwt
     return nil
 	} else {
 	  tokenString := r.Header["Authorization"][0]
-	  if ok := verifyAuthorizationToken(tokenString); !ok {
+	  if ok := VerifyAuthorizationToken(tokenString); !ok {
   		resp["error"] = "Token doesn't start with 'Bearer '. Token incorrect."
       w.WriteHeader(http.StatusNotAcceptable)
       return nil
 	  } else { 
 	  	tokenClear := tokenString[7:]
-		  claims, err := getClaims(tokenClear)
+      if contains(loggedOut, tokenClear) {
+        resp["error"] = []string{"Token logged out"}
+        w.WriteHeader(http.StatusForbidden)
+        return nil
+      } else {
+		    claims, err := getClaims(tokenClear)
+	  	  if err != nil {
+	  	    var errors = []string{"Errors while parsing token."}
+          errors = append(errors, err.Error())
+          resp["error"] = errors
+          w.WriteHeader(http.StatusForbidden)
+          return nil
+        } else {
+          return claims
+        }
+      }
+    }
+  }
+}
+
+func LogoutJWT(w http.ResponseWriter, r *http.Request, resp map[string]any) {
+	if r.Header["Authorization"] == nil {
+	  resp["error"] = []string{"Authorization header not found"}
+    w.WriteHeader(http.StatusForbidden)
+	} else {
+	  tokenString := r.Header["Authorization"][0]
+	  if ok := VerifyAuthorizationToken(tokenString); !ok {
+  		resp["error"] = "Token doesn't start with 'Bearer '. Token incorrect."
+      w.WriteHeader(http.StatusNotAcceptable)
+	  } else { 
+	  	tokenClear := tokenString[7:]
+		  _, err := getClaims(tokenClear)
 	  	if err != nil {
 	  	  var errors = []string{"Errors while parsing token."}
         errors = append(errors, err.Error())
         resp["error"] = errors
         w.WriteHeader(http.StatusForbidden)
-        return nil
       } else {
-        return claims
+        if !contains(loggedOut, tokenClear) {
+          loggedOut = append(loggedOut, tokenClear)
+          resp["status"] = "Success"
+        } else {
+          resp["error"] = []string{"Already logged out"}
+        }
       }
     }
   }
+  
 }
 
 func VerifyCredentials(userData userRepo.User) (userRepo.User, []error) {
@@ -118,4 +165,20 @@ func VerifyCredentials(userData userRepo.User) (userRepo.User, []error) {
   user.Password = ""
   return user, nil
 
+}
+
+func LogoutMonitor() {
+  log.Println("Logout monitor started.")
+  for {
+    var temp []string
+    for _, v := range loggedOut {
+      _, err := getClaims(v)
+
+      if err == nil {
+        temp = append(temp, v)
+      }
+    }
+    loggedOut = temp
+    time.Sleep(30 * time.Second)
+  }
 }

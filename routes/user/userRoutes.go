@@ -74,7 +74,13 @@ func UserSignup(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 }
   
 func UserLogout(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
-	fmt.Fprintf(w, "Not Implemented\n")
+  w.Header().Set("Content-Type", "application/json")
+  resp := make(map[string]any)
+
+  userHelper.LogoutJWT(w,r,resp)
+
+  _ = json.NewEncoder(w).Encode(resp)
+  fmt.Fprintf(w, "Not Implemented\n")
 }
   
 func UserStatus(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {

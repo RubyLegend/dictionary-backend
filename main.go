@@ -13,6 +13,8 @@ import (
   "github.com/RubyLegend/dictionary-backend/routes/dictionary"
   "github.com/RubyLegend/dictionary-backend/routes/history"
   "github.com/RubyLegend/dictionary-backend/routes/quiz"
+
+  userHelper "github.com/RubyLegend/dictionary-backend/middleware/users"
 )
 
 func main() {
@@ -51,6 +53,9 @@ func main() {
   router.GET("/api/v1/quiz/new", quizRoutes.QuizGetNew)
   router.POST("/api/v1/quiz/:quizId", quizRoutes.QuizPost)
   router.GET("/api/v1/quiz/status", quizRoutes.QuizGetStatus)
+
+  // Just for now logout monitor will detach to it's own thread here
+  go userHelper.LogoutMonitor()
 
   log.Println("Server started at http://localhost:8080")
   log.Fatal(http.ListenAndServe(":8080", router))
