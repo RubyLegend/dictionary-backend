@@ -53,14 +53,15 @@ func validation(dictionaryData Dictionary) []error {
 	return err
 }
 
-func GetDictionary(UserId int, DictionaryId int) ([]error, Dictionary) {
+func GetDictionary(UserId int) ([]error, Dictionary) {
 	var err []error
-	userRepo.Users = append(userRepo.Users, userRepo.User{UserId: 1, Username: "puk", Email: "ehgfwe", Password: "dssf", CreatedAt: time.Now()})
-	
+	// userRepo.Users = append(userRepo.Users, userRepo.User{UserId: 1, Username: "puk", Email: "ehgfwe", Password: "dssf", CreatedAt: time.Now()})
+	// Dictionaries = append(Dictionaries, Dictionary{DictionaryId: 2, UserId: 1, Name: "ehgfwe", CreatedAt: time.Now()})
+
 	var FinedDictionary Dictionary
-	
+
 	for _, v := range Dictionaries {
-		if v.DictionaryId == DictionaryId && v.UserId == UserId {
+		if v.UserId == UserId {
 			FinedDictionary = v
 		}
 	}
@@ -68,7 +69,7 @@ func GetDictionary(UserId int, DictionaryId int) ([]error, Dictionary) {
 	if (FinedDictionary == Dictionary{}) {
 		err = append(err, errors.New("Dictionary not found"))
 	}
-	
+
 	return err, FinedDictionary
 }
 

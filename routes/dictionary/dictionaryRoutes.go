@@ -2,33 +2,22 @@ package dictionaryRoutes
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"net/http"
-	"strconv"
 
 	dictionaryRepo "github.com/RubyLegend/dictionary-backend/repository/dictionary"
 	"github.com/julienschmidt/httprouter"
 )
 
-func DictionaryGet(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
-	var err []error
+func DictionaryGet(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+	
 	w.Header().Set("Content-Type", "application/json")
 	var UserId int = 1
-	DictionaryIdStr := ps.ByName("id")
-
-	DictionaryId, errAtoi := strconv.Atoi(DictionaryIdStr)
-	if errAtoi != nil {
-		err = append(err, errors.New("Occurred some error"))
-	}
 
 	resp := make(map[string]any)
 
-	errors, dictionary := dictionaryRepo.GetDictionary(UserId, DictionaryId)
+	errors, dictionary := dictionaryRepo.GetDictionary(UserId)
 
-	if errors != nil {
-		err = append(err, errors...)
-	}
 
 	if len(errors) > 0 {
 		var errorMessages []string
