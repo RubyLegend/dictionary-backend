@@ -20,8 +20,10 @@ var Dictionaries []Dictionary
 func checkDictionaryExistance(dictionaryData Dictionary) []error {
 	var err []error
 
+	// userRepo.Users = append(userRepo.Users, User{UserId: 1, Email: "ehgfwe", Password: "dssf", CreatedAt: time.Now()})
+
 	for _, v := range Dictionaries {
-		if v.Name == dictionaryData.Name {
+		if v.Name == dictionaryData.Name && v.UserId == dictionaryData.UserId {
 			err = append(err, errors.New("Dictionary "+dictionaryData.Name+" already exists"))
 		}
 	}
@@ -35,7 +37,6 @@ func validation(dictionaryData Dictionary) []error {
 	if len(dictionaryData.Name) == 0 {
 		err = append(err, errors.New("Name is required field"))
 	}
-
 
 	found := false
 	for _, user := range userRepo.Users {
@@ -52,8 +53,29 @@ func validation(dictionaryData Dictionary) []error {
 	return err
 }
 
+func GetDictionary(UserId int, DictionaryId int) ([]error, Dictionary) {
+	var err []error
+	userRepo.Users = append(userRepo.Users, userRepo.User{UserId: 1, Username: "puk", Email: "ehgfwe", Password: "dssf", CreatedAt: time.Now()})
+	
+	var FinedDictionary Dictionary
+	
+	for _, v := range Dictionaries {
+		if v.DictionaryId == DictionaryId && v.UserId == UserId {
+			FinedDictionary = v
+		}
+	}
+
+	if (FinedDictionary == Dictionary{}) {
+		err = append(err, errors.New("Dictionary not found"))
+	}
+	
+	return err, FinedDictionary
+}
+
 func AddDictionary(dictionaryData Dictionary) []error {
 	var err []error
+
+	// userRepo.Users = append(userRepo.Users, userRepo.User{UserId: 1, Username: "puk", Email: "ehgfwe", Password: "dssf", CreatedAt: time.Now()})
 
 	err = append(err, validation(dictionaryData)...)
 	err = append(err, checkDictionaryExistance(dictionaryData)...)
