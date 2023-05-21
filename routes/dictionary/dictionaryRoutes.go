@@ -10,7 +10,28 @@ import (
 )
 
 func DictionaryGet(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
-	fmt.Fprintf(w, "Not Implemented\n")
+	
+	w.Header().Set("Content-Type", "application/json")
+	var UserId int = 1
+
+	resp := make(map[string]any)
+
+	errors, dictionary := dictionaryRepo.GetDictionary(UserId)
+
+
+	if len(errors) > 0 {
+		var errorMessages []string
+		for _, v := range errors {
+			errorMessages = append(errorMessages, v.Error())
+		}
+		resp["error"] = errorMessages
+		w.WriteHeader(http.StatusBadRequest)
+	} else {
+		resp["dictionary"] = dictionary
+		w.WriteHeader(http.StatusOK)
+	}
+	_ = json.NewEncoder(w).Encode(resp)
+
 }
 
 func DictionaryPost(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
@@ -35,7 +56,7 @@ func DictionaryPost(w http.ResponseWriter, r *http.Request, _ httprouter.Params)
 	} else {
 		w.WriteHeader(http.StatusOK)
 	}
-  _ = json.NewEncoder(w).Encode(resp)
+	_ = json.NewEncoder(w).Encode(resp)
 }
 
 func DictionaryPatch(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
