@@ -2,7 +2,6 @@ package dictionaryRoutes
 
 import (
 	"encoding/json"
-	// "log"
 	"net/http"
 
 	dictionaryRepo "github.com/RubyLegend/dictionary-backend/repository/dictionary"
