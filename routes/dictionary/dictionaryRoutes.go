@@ -3,6 +3,8 @@ package dictionaryRoutes
 import (
 	"encoding/json"
 	"fmt"
+
+	// "log"
 	"net/http"
 
 	dictionaryRepo "github.com/RubyLegend/dictionary-backend/repository/dictionary"
@@ -10,14 +12,13 @@ import (
 )
 
 func DictionaryGet(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
-	
+
 	w.Header().Set("Content-Type", "application/json")
 	var UserId int = 1
 
 	resp := make(map[string]any)
 
 	errors, dictionary := dictionaryRepo.GetDictionary(UserId)
-
 
 	if len(errors) > 0 {
 		var errorMessages []string
@@ -63,6 +64,24 @@ func DictionaryPatch(w http.ResponseWriter, r *http.Request, _ httprouter.Params
 	fmt.Fprintf(w, "Not Implemented\n")
 }
 
-func DictionaryDelete(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
-	fmt.Fprintf(w, "Not Implemented\n")
+func DictionaryDelete(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
+	w.Header().Set("Content-Type", "application/json")
+	resp := make(map[string]any)
+
+	var UserId int = 1
+	DictionaryId := p.ByName("id")
+
+	errors := dictionaryRepo.DeleteDictionary(UserId, DictionaryId)
+
+	if len(errors) > 0 {
+		var errorMessages []string
+		for _, v := range errors {
+			errorMessages = append(errorMessages, v.Error())
+		}
+		resp["error"] = errorMessages
+		w.WriteHeader(http.StatusBadRequest)
+	} else {
+		w.WriteHeader(http.StatusOK)
+	}
+	_ = json.NewEncoder(w).Encode(resp)
 }
