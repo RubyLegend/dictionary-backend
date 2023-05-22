@@ -2,9 +2,7 @@ package users
 
 import (
 	"time"
-	//   "fmt"
 	"errors"
-	"log"
 	"strconv"
 
 	userRepo "github.com/RubyLegend/dictionary-backend/repository/users"
@@ -33,7 +31,7 @@ func checkDictionaryExistance(dictionaryData Dictionary) []error {
 	return err
 }
 
-func validation(dictionaryData Dictionary) []error {
+func postValidation(dictionaryData Dictionary) []error {
 	var err []error
 
 	if len(dictionaryData.Name) == 0 {
@@ -54,6 +52,8 @@ func validation(dictionaryData Dictionary) []error {
 
 	return err
 }
+
+
 
 func GetDictionary(UserId int) ([]error, Dictionary) {
 	var err []error
@@ -80,7 +80,7 @@ func AddDictionary(dictionaryData Dictionary) []error {
 
 	// userRepo.Users = append(userRepo.Users, userRepo.User{UserId: 1, Username: "puk", Email: "ehgfwe", Password: "dssf", CreatedAt: time.Now()})
 
-	err = append(err, validation(dictionaryData)...)
+	err = append(err, postValidation(dictionaryData)...)
 	err = append(err, checkDictionaryExistance(dictionaryData)...)
 
 	if err == nil {
@@ -108,6 +108,7 @@ func DeleteDictionary(UserId int, DictionaryId string) []error {
 	if error != nil {
 		err = append(err, errors.New("Invalid id params"))
 	}
+
 	// userRepo.Users = append(userRepo.Users, userRepo.User{UserId: 2, Username: "puk", Email: "ehgfwe", Password: "dssf", CreatedAt: time.Now()})
 	// Dictionaries = append(Dictionaries, Dictionary{DictionaryId: 2, UserId: 2, Name: "ehgfwe", CreatedAt: time.Now()})
 
@@ -123,8 +124,52 @@ func DeleteDictionary(UserId int, DictionaryId string) []error {
 		if !isDeleted {
 			err = append(err, errors.New("Dictionary not found"))
 		}
-		log.Println(Dictionaries)
 	}
 
 	return err
+}
+
+func updateValidation(dictionaryData Dictionary) []error {
+	var err []error
+	var isFieldInRequest = false
+	if len(dictionaryData.Name) != 0 {
+		isFieldInRequest = true
+	}
+	if !dictionaryData.CreatedAt.IsZero() {
+		isFieldInRequest = true
+	}
+	if(!isFieldInRequest){
+		err = append(err, errors.New("Incorrect body"))
+	}
+	return err
+}
+
+func UpdateDictionary(UserId int, DictionaryId string, dictionaryData Dictionary) ([]error, Dictionary) {
+	var err []error
+	id, error := strconv.Atoi(DictionaryId)
+
+	if error != nil {
+		err = append(err, errors.New("Invalid id params"))
+	}
+
+	err = append(err, updateValidation(dictionaryData)...)
+
+	userRepo.Users = append(userRepo.Users, userRepo.User{UserId: 2, Username: "puk", Email: "ehgfwe", Password: "dssf", CreatedAt: time.Now()})
+	Dictionaries = append(Dictionaries, Dictionary{DictionaryId: 2, UserId: 2, Name: "dictionary", CreatedAt: time.Now()})
+
+	var UpdatedDictionary Dictionary
+	if err == nil {
+		for i, v := range Dictionaries {
+			if v.UserId == UserId && v.DictionaryId == id {
+				Dictionaries[i] = dictionaryData
+				UpdatedDictionary = Dictionaries[i]
+				break
+			}
+		}
+		if UpdatedDictionary == (Dictionary{}) {
+			err = append(err, errors.New("Dictionary not found"))
+		}
+	}
+
+	return err, UpdatedDictionary
 }

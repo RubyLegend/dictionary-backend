@@ -2,8 +2,6 @@ package dictionaryRoutes
 
 import (
 	"encoding/json"
-	"fmt"
-
 	// "log"
 	"net/http"
 
@@ -60,15 +58,38 @@ func DictionaryPost(w http.ResponseWriter, r *http.Request, _ httprouter.Params)
 	_ = json.NewEncoder(w).Encode(resp)
 }
 
-func DictionaryPatch(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
-	fmt.Fprintf(w, "Not Implemented\n")
+func DictionaryPatch(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
+	w.Header().Set("Content-Type", "application/json")
+	resp := make(map[string]any)
+
+	var UserId int = 2
+	DictionaryId := p.ByName("id")
+
+	var dictionaryData dictionaryRepo.Dictionary
+	_ = json.NewDecoder(r.Body).Decode(&dictionaryData)
+
+	errors, UpdatedDictionary := dictionaryRepo.UpdateDictionary(UserId, DictionaryId, dictionaryData)
+
+	if len(errors) > 0 {
+		var errorMessages []string
+		for _, v := range errors {
+			errorMessages = append(errorMessages, v.Error())
+		}
+		resp["error"] = errorMessages
+		w.WriteHeader(http.StatusBadRequest)
+	} else {
+		resp["dictionary"] = UpdatedDictionary
+		w.WriteHeader(http.StatusOK)
+	}
+	_ = json.NewEncoder(w).Encode(resp)
+
 }
 
 func DictionaryDelete(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 	w.Header().Set("Content-Type", "application/json")
 	resp := make(map[string]any)
 
-	var UserId int = 1
+	var UserId int = 2
 	DictionaryId := p.ByName("id")
 
 	errors := dictionaryRepo.DeleteDictionary(UserId, DictionaryId)
