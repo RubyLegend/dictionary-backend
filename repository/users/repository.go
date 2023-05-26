@@ -76,7 +76,12 @@ func findUser(params ...interface{}) (interface{}, error) {
 
 		// Under normal circumstances, there will be only one record
 		rows.Next()
-		rows.Scan(&user.UserId, &user.Email, &user.Username, &user.Password, &user.CreatedAt)
+		err = rows.Scan(&user.UserId, &user.Email, &user.Username, &user.Password, &user.CreatedAt)
+
+		if err != nil {
+			return nil, err
+		}
+
 		return user, nil
 
 	} else {
@@ -94,7 +99,11 @@ func findUser(params ...interface{}) (interface{}, error) {
 
 			// Under normal circumstances, there will be only one record
 			rows.Next()
-			rows.Scan(&user.UserId, &user.Email, &user.Username, &user.Password, &user.CreatedAt)
+			err = rows.Scan(&user.UserId, &user.Email, &user.Username, &user.Password, &user.CreatedAt)
+			if err != nil {
+				return nil, err
+			}
+
 			return user, nil
 		} else {
 			return nil, errors.New("unknown parameter passed")
