@@ -2,7 +2,6 @@ package histories
 
 import (
 	"errors"
-	"fmt"
 	"time"
 )
 
@@ -10,32 +9,32 @@ type History struct {
 	HistoryId int       `json:"HistoryId"`
 	UserId    int       `json:"UserId"`
 	WordId    int       `json:"WordId"`
-	isCorrect bool      `json:"isCorrect"`
-	createdAt time.Time `json:"createdAt"`
+	isCorrect bool      //`json:"isCorrect"`
+	createdAt time.Time //`json:"createdAt"`
 }
 
 var Histories []History
 
-func checkTranslationExistance(historyData History) []error {
-	var err []error
+//func checkHistoryExistance(historyData History) []error {
+//	var err []error
+//
+//	for _, v := range Histories {
+//		if v.isCorrect == historyData.isCorrect && v.UserId == historyData.UserId {
+//			err = append(err, errors.New("History  already exists"))
+//		}
+//	}
+//
+//	return err
+//}
 
-	for _, v := range Histories {
-		if v.isCorrect == historyData.isCorrect && v.UserId == historyData.UserId {
-			err = append(err, errors.New("History  already exists"))
-		}
-	}
-
-	return err
-}
-
-func findHistory(histories []History, historyID int) (History, error) {
-	for _, history := range histories {
-		if history.HistoryId == historyID {
-			return history, nil
-		}
-	}
-	return History{}, fmt.Errorf("history with ID %d not found", historyID)
-}
+//func findHistory(histories []History, historyID int) (History, error) {
+//	for _, history := range histories {
+//		if history.HistoryId == historyID {
+//			return history, nil
+//		}
+//	}
+//	return History{}, fmt.Errorf("history with ID %d not found", historyID)
+//}
 
 func GetHistory(historyId int) ([]error, History) {
 	var err []error
