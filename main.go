@@ -4,6 +4,7 @@ import (
 	"log"
 	"net/http"
 
+	"github.com/joho/godotenv"
 	"github.com/julienschmidt/httprouter"
 
 	"github.com/RubyLegend/dictionary-backend/routes"
@@ -20,6 +21,11 @@ import (
 )
 
 func main() {
+	err := godotenv.Load()
+	if err != nil {
+		log.Fatal("Error loading .env file")
+	}
+
 	// Connecting to database
 	db.OpenConnection()
 

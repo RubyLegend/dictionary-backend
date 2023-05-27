@@ -29,3 +29,6 @@ swagger.yml
 
 # dlv debug binary
 __debug_bin
+
+# Environment file
+.env

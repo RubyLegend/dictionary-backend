@@ -3,6 +3,7 @@ package database
 import (
 	"database/sql"
 	"log"
+	"os"
 
 	"github.com/go-sql-driver/mysql"
 )
@@ -10,11 +11,11 @@ import (
 var db *sql.DB
 
 var cfg = mysql.Config{
-	User:                 "root",
-	Passwd:               "YAELfvk5Jgt8qRTc",
+	User:                 "",
+	Passwd:               "",
 	Net:                  "tcp",
-	Addr:                 "127.0.0.1:3306",
-	DBName:               "Dictionary",
+	Addr:                 "",
+	DBName:               "",
 	ParseTime:            true,
 	AllowNativePasswords: true,
 }
@@ -24,6 +25,11 @@ func OpenConnection() bool {
 	if db != nil {
 		return true
 	}
+
+	cfg.User = os.Getenv("DB_USER")
+	cfg.Passwd = os.Getenv("DB_PASSWORD")
+	cfg.Addr = string(os.Getenv("DB_HOST") + ":" + os.Getenv("DB_PORT"))
+	cfg.DBName = os.Getenv("DB_NAME")
 
 	// Open connection
 	var err error

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"os"
 	"strings"
 	"time"
 
@@ -12,7 +13,7 @@ import (
 	jwt "github.com/golang-jwt/jwt/v5"
 )
 
-var secretKey = []byte("sampleSecretKeyYouShouldNeverShare")
+var secretKey = []byte("")
 
 var expirationTime = 10 // minutes
 
@@ -27,6 +28,10 @@ func GenerateJWT(username string) (string, error) {
 	claims["username"] = username
 	claims["authorized"] = true
 	claims["expiresAt"] = expireTime.Unix()
+
+	if len(secretKey) == 0 {
+		secretKey = []byte(os.Getenv("JWT_SECRET"))
+	}
 
 	tokenString, err := token.SignedString(secretKey)
 
@@ -45,6 +50,9 @@ func getClaims(tokenString string) (jwt.MapClaims, error) {
 			return nil, fmt.Errorf("token failed parsing")
 		}
 
+		if len(secretKey) == 0 {
+			secretKey = []byte(os.Getenv("JWT_SECRET"))
+		}
 		return secretKey, nil
 	})
 
