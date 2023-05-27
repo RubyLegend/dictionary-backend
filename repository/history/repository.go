@@ -9,8 +9,8 @@ type History struct {
 	HistoryId int       `json:"HistoryId"`
 	UserId    int       `json:"UserId"`
 	WordId    int       `json:"WordId"`
-	isCorrect bool      //`json:"isCorrect"`
-	createdAt time.Time //`json:"createdAt"`
+	IsCorrect bool      `json:"isCorrect"`
+	CreatedAt time.Time `json:"createdAt"`
 }
 
 var Histories []History
@@ -20,7 +20,7 @@ var Histories []History
 //
 //	for _, v := range Histories {
 //		if v.isCorrect == historyData.isCorrect && v.UserId == historyData.UserId {
-//			err = append(err, errors.New("History  already exists"))
+//			err = append(err, errors.New("history  already exists"))
 //		}
 //	}
 //
@@ -38,7 +38,7 @@ var Histories []History
 
 func GetHistory(historyId int) ([]error, History) {
 	var err []error
-	Histories = append(Histories, History{HistoryId: 1, UserId: 1, WordId: 1, isCorrect: true, createdAt: time.Now()})
+	Histories = append(Histories, History{HistoryId: 1, UserId: 1, WordId: 1, IsCorrect: true, CreatedAt: time.Now()})
 	var foundHistory History
 
 	for _, v := range Histories {
@@ -49,7 +49,7 @@ func GetHistory(historyId int) ([]error, History) {
 	}
 
 	if (foundHistory == History{}) {
-		err = append(err, errors.New("History not found"))
+		err = append(err, errors.New("history not found"))
 	}
 
 	return err, foundHistory
@@ -67,7 +67,7 @@ func DeleteHistory(userId, historyId int) []error {
 	}
 
 	if !isDeleted {
-		err = append(err, errors.New("History not found"))
+		err = append(err, errors.New("history not found"))
 	}
 
 	return err
