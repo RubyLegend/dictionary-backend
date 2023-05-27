@@ -21,7 +21,7 @@ func checkTranslationExistance(translationData Translation) []error {
 
 	for _, v := range Translations {
 		if v.Name == translationData.Name && v.WordId == translationData.WordId {
-			err = append(err, errors.New("Translation "+translationData.Name+" already exists"))
+			err = append(err, errors.New("translation "+translationData.Name+" already exists"))
 		}
 	}
 
@@ -32,7 +32,7 @@ func validation(translationData Translation) []error {
 	var err []error
 
 	if len(translationData.Name) == 0 {
-		err = append(err, errors.New("Name is required field"))
+		err = append(err, errors.New("name is required field"))
 	}
 	found := false
 	for _, translation := range wordsRepo.Words {
@@ -42,7 +42,7 @@ func validation(translationData Translation) []error {
 		}
 	}
 	if !found {
-		err = append(err, errors.New("Occured some error"))
+		err = append(err, errors.New("occured some error"))
 	}
 	return err
 }
@@ -82,7 +82,7 @@ func GetTranslation(TranslationId int) ([]error, Translation) {
 	}
 
 	if (FinedTranslation == Translation{}) {
-		err = append(err, errors.New("Translation not found"))
+		err = append(err, errors.New("translation not found"))
 	}
 
 	return err, FinedTranslation
@@ -115,7 +115,7 @@ func DeleteTranslation(WordId int, TranslationId string) []error {
 	id, error := strconv.Atoi(TranslationId)
 
 	if error != nil {
-		err = append(err, errors.New("Invalid id params"))
+		err = append(err, errors.New("invalid id params"))
 		return err
 	}
 
@@ -129,7 +129,7 @@ func DeleteTranslation(WordId int, TranslationId string) []error {
 	}
 
 	if !isDeleted {
-		err = append(err, errors.New("Translation not found"))
+		err = append(err, errors.New("translation not found"))
 	}
 
 	return err
@@ -144,7 +144,7 @@ func updateValidation(translationData Translation) []error {
 		isFieldInRequest = true
 	}
 	if !isFieldInRequest {
-		err = append(err, errors.New("Incorrect body"))
+		err = append(err, errors.New("incorrect body"))
 	}
 	return err
 }
@@ -154,7 +154,7 @@ func UpdateTranslation(WordId int, TranslationId string, translationData Transla
 	id, error := strconv.Atoi(TranslationId)
 
 	if error != nil {
-		err = append(err, errors.New("Invalid id params"))
+		err = append(err, errors.New("invalid id params"))
 	}
 
 	err = append(err, updateValidation(translationData)...)
@@ -169,7 +169,7 @@ func UpdateTranslation(WordId int, TranslationId string, translationData Transla
 			}
 		}
 		if UpdatedTranslation == (Translation{}) {
-			err = append(err, errors.New("Translation not found"))
+			err = append(err, errors.New("translation not found"))
 		}
 	}
 
