@@ -10,11 +10,12 @@ import (
 var db *sql.DB
 
 var cfg = mysql.Config{
-	User:                 "",
-	Passwd:               "",
+	User:                 "root",
+	Passwd:               "YAELfvk5Jgt8qRTc",
 	Net:                  "tcp",
 	Addr:                 "127.0.0.1:3306",
 	DBName:               "Dictionary",
+	ParseTime:            true,
 	AllowNativePasswords: true,
 }
 

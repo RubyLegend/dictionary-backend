@@ -14,6 +14,7 @@ import (
 	userRoutes "github.com/RubyLegend/dictionary-backend/routes/user"
 	wordRoutes "github.com/RubyLegend/dictionary-backend/routes/word"
 
+	"github.com/RubyLegend/dictionary-backend/middleware/cors"
 	db "github.com/RubyLegend/dictionary-backend/middleware/database"
 	userHelper "github.com/RubyLegend/dictionary-backend/middleware/users"
 )
@@ -26,9 +27,18 @@ func main() {
 	router := httprouter.New()
 
 	router.GET("/", routes.Index)
+	router.OPTIONS("/", func(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+		cors.Setup(w, r)
+	}) // done
 
 	router.POST("/api/v1/word", wordRoutes.WordPost)
+	router.OPTIONS("/api/v1/word", func(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+		cors.Setup(w, r)
+	}) // done
 	router.DELETE("/api/v1/word/:id", wordRoutes.WordDelete)
+	router.OPTIONS("/api/v1/word/:id", func(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+		cors.Setup(w, r)
+	}) // done
 	router.GET("/api/v1/word", wordRoutes.WordGet)
 	router.PATCH("/api/v1/word/:id", wordRoutes.WordPatch)
 
@@ -37,22 +47,46 @@ func main() {
 	router.GET("/api/v1/translation", translationRoutes.TranslationGet)
 	router.PATCH("/api/v1/translation/:id", translationRoutes.TranslationPatch)
 
-	router.POST("/api/v1/user/login", userRoutes.UserLogin)   // done
+	router.POST("/api/v1/user/login", userRoutes.UserLogin) // done
+	router.OPTIONS("/api/v1/user/login", func(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+		cors.Setup(w, r)
+	}) // done
 	router.POST("/api/v1/user/signup", userRoutes.UserSignup) // done
+	router.OPTIONS("/api/v1/user/signup", func(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+		cors.Setup(w, r)
+	}) // done
 	router.POST("/api/v1/user/logout", userRoutes.UserLogout) // done
-	router.GET("/api/v1/user/status", userRoutes.UserStatus)  // done
+	router.OPTIONS("/api/v1/user/logout", func(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+		cors.Setup(w, r)
+	}) // done
+	router.GET("/api/v1/user/status", userRoutes.UserStatus) // done
+	router.OPTIONS("/api/v1/user/status", func(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+		cors.Setup(w, r)
+	}) // done
 	router.POST("/api/v1/user/restore-username", userRoutes.UserRestoreUsername)
 	router.POST("/api/v1/user/restore-password", userRoutes.UserRestorePassword)
 	router.DELETE("/api/v1/user", userRoutes.UserDelete) // done
 	router.PATCH("/api/v1/user", userRoutes.UserPatch)   // done
+	router.OPTIONS("/api/v1/user", func(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+		cors.Setup(w, r)
+	}) // done
 
 	router.GET("/api/v1/dictionary", dictionaryRoutes.DictionaryGet)
 	router.POST("/api/v1/dictionary", dictionaryRoutes.DictionaryPost)
+	router.OPTIONS("/api/v1/dictionary", func(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+		cors.Setup(w, r)
+	}) // done
 	router.PATCH("/api/v1/dictionary/:id", dictionaryRoutes.DictionaryPatch)
 	router.DELETE("/api/v1/dictionary/:id", dictionaryRoutes.DictionaryDelete)
+	router.OPTIONS("/api/v1/dictionary/:id", func(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+		cors.Setup(w, r)
+	}) // done
 
 	router.GET("/api/v1/history", historyRoutes.HistoryGet)
 	router.DELETE("/api/v1/history", historyRoutes.HistoryDelete)
+	router.OPTIONS("/api/v1/history", func(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+		cors.Setup(w, r)
+	}) // done
 
 	router.GET("/api/v1/quiz/new", quizRoutes.QuizGetNew)
 	router.POST("/api/v1/quiz/:quizId", quizRoutes.QuizPost)

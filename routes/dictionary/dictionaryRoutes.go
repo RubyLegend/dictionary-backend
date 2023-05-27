@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 
+	"github.com/RubyLegend/dictionary-backend/middleware/cors"
 	dictionaryRepo "github.com/RubyLegend/dictionary-backend/repository/dictionary"
 	"github.com/julienschmidt/httprouter"
 )
@@ -11,6 +12,7 @@ import (
 func DictionaryGet(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 
 	w.Header().Set("Content-Type", "application/json")
+	cors.Setup(w, r)
 	var UserId int = 1
 
 	resp := make(map[string]any)
@@ -34,6 +36,7 @@ func DictionaryGet(w http.ResponseWriter, r *http.Request, _ httprouter.Params) 
 
 func DictionaryPost(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	w.Header().Set("Content-Type", "application/json")
+	cors.Setup(w, r)
 
 	var UserId = 1
 
@@ -59,6 +62,7 @@ func DictionaryPost(w http.ResponseWriter, r *http.Request, _ httprouter.Params)
 
 func DictionaryPatch(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 	w.Header().Set("Content-Type", "application/json")
+	cors.Setup(w, r)
 	resp := make(map[string]any)
 
 	var UserId int = 2
@@ -86,6 +90,7 @@ func DictionaryPatch(w http.ResponseWriter, r *http.Request, p httprouter.Params
 
 func DictionaryDelete(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 	w.Header().Set("Content-Type", "application/json")
+	cors.Setup(w, r)
 	resp := make(map[string]any)
 
 	var UserId int = 2

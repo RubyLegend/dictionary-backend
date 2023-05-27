@@ -1,9 +1,9 @@
 package users
 
 import (
-	"time"
 	"errors"
 	"strconv"
+	"time"
 
 	userRepo "github.com/RubyLegend/dictionary-backend/repository/users"
 )
@@ -52,8 +52,6 @@ func postValidation(dictionaryData Dictionary) []error {
 
 	return err
 }
-
-
 
 func GetDictionary(UserId int) ([]error, Dictionary) {
 	var err []error
@@ -138,7 +136,7 @@ func updateValidation(dictionaryData Dictionary) []error {
 	if !dictionaryData.CreatedAt.IsZero() {
 		isFieldInRequest = true
 	}
-	if(!isFieldInRequest){
+	if !isFieldInRequest {
 		err = append(err, errors.New("Incorrect body"))
 	}
 	return err

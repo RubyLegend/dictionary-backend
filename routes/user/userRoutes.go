@@ -2,10 +2,10 @@ package userRoutes
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"net/http"
 
+	"github.com/RubyLegend/dictionary-backend/middleware/cors"
 	userHelper "github.com/RubyLegend/dictionary-backend/middleware/users"
 	userRepo "github.com/RubyLegend/dictionary-backend/repository/users"
 
@@ -14,13 +14,14 @@ import (
 
 func UserLogin(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	w.Header().Set("Content-Type", "application/json")
+	cors.Setup(w, r)
 
 	var userData userRepo.User
 	_ = json.NewDecoder(r.Body).Decode(&userData)
 	resp := make(map[string]any)
 
-	if userData.Username == "" {
-		resp["error"] = []string{errors.New("Username not provided. Cannot authorize.").Error()}
+	if userData.Email == "" {
+		resp["error"] = []string{"email not provided. cannot authorize"}
 		w.WriteHeader(http.StatusNotFound)
 	} else {
 		user, err := userHelper.VerifyCredentials(userData)
@@ -32,13 +33,13 @@ func UserLogin(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 			resp["error"] = errors
 			w.WriteHeader(http.StatusForbidden)
 		} else {
-			token, err := userHelper.GenerateJWT(userData.Username)
+			token, err := userHelper.GenerateJWT(user.Username)
 
 			if err != nil {
 				resp["error"] = []string{err.Error()}
 				w.WriteHeader(http.StatusInternalServerError)
 			} else {
-				resp["token"] = token
+				resp["access_token"] = token
 				resp["userData"] = user
 				w.WriteHeader(http.StatusOK)
 			}
@@ -49,6 +50,7 @@ func UserLogin(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 
 func UserSignup(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	w.Header().Set("Content-Type", "application/json")
+	cors.Setup(w, r)
 	var userData userRepo.User
 	_ = json.NewDecoder(r.Body).Decode(&userData)
 	resp := make(map[string]any)
@@ -65,6 +67,17 @@ func UserSignup(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 		w.WriteHeader(http.StatusNotAcceptable)
 	} else {
 		resp["status"] = "User added successfully"
+		token, err := userHelper.GenerateJWT(userData.Username)
+
+		if err != nil {
+			resp["error"] = []string{err.Error()}
+			w.WriteHeader(http.StatusInternalServerError)
+		} else {
+			resp["access_token"] = token
+			resp["userData"] = userData
+			w.WriteHeader(http.StatusOK)
+		}
+
 	}
 
 	_ = json.NewEncoder(w).Encode(resp)
@@ -72,6 +85,7 @@ func UserSignup(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 
 func UserLogout(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	w.Header().Set("Content-Type", "application/json")
+	cors.Setup(w, r)
 	resp := make(map[string]any)
 
 	userHelper.LogoutJWT(w, r, resp)
@@ -81,6 +95,7 @@ func UserLogout(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 
 func UserStatus(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	w.Header().Set("Content-Type", "application/json")
+	cors.Setup(w, r)
 	var userData userRepo.User
 	resp := make(map[string]any)
 
@@ -103,15 +118,18 @@ func UserStatus(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 }
 
 func UserRestoreUsername(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+	cors.Setup(w, r)
 	fmt.Fprintf(w, "Not Implemented\n")
 }
 
 func UserRestorePassword(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+	cors.Setup(w, r)
 	fmt.Fprintf(w, "Not Implemented\n")
 }
 
 func UserDelete(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	w.Header().Set("Content-Type", "application/json")
+	cors.Setup(w, r)
 	var userData userRepo.User
 	resp := make(map[string]any)
 
@@ -134,6 +152,7 @@ func UserDelete(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 
 func UserPatch(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	w.Header().Set("Content-Type", "application/json")
+	cors.Setup(w, r)
 	var userData userRepo.User
 	_ = json.NewDecoder(r.Body).Decode(&userData)
 	resp := make(map[string]any)
