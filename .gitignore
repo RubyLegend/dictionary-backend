@@ -19,3 +19,16 @@
 
 # Go workspace file
 go.work
+
+# Some configuration files, which are unique to my own system
+.sqllsrc.json
+
+# Not including swagger OpenAPI description temporary
+# At least until I found a quick solution to host Swagger UI
+swagger.yml
+
+# dlv debug binary
+__debug_bin
+
+# Environment file
+.env

@@ -1,103 +1,201 @@
 package users
 
 import (
-  "time"
-  "log"
-  "errors"
-  "fmt"
-  "bytes"
+	"errors"
+	"log"
+	"time"
+
+	db "github.com/RubyLegend/dictionary-backend/middleware/database"
 )
 
 type User struct {
-  UserId int `json:"userId"`
-  Email string `json:"email"`
-  Username string `json:"username"`
-  Password string `json:"password"`
-  CreatedAt time.Time `json:"createdAt"`
+	UserId    int       `json:"userId"`
+	Email     string    `json:"email"`
+	Username  string    `json:"username"`
+	Password  string    `json:"password"`
+	CreatedAt time.Time `json:"createdAt"`
 }
 
 var Users []User
 
-func checkUserExistance(userData User) (error) {
-  for _, v := range Users {
-    if v.Email == userData.Email {
-      return errors.New("Email already registered.")
-    } else if v.Username == userData.Username {
-      return errors.New("Username already registered.")
-    }
-  }
+func checkUserExistance(userData User) []error {
+	var Errors []error
+	dbCon := db.GetConnection()
+	var res, res2 int
 
-  return nil
+	err := dbCon.QueryRow("select count(*) from Users where email = ?", userData.Email).Scan(&res)
+	if err != nil {
+		Errors = append(Errors, err)
+		return Errors
+	}
+
+	err2 := dbCon.QueryRow("select count(*) from Users where username = ?", userData.Username).Scan(&res2)
+	if err2 != nil {
+		Errors = append(Errors, err2)
+		return Errors
+	}
+
+	if res != 0 {
+		Errors = append(Errors, errors.New("email already registered"))
+	}
+	if res2 != 0 {
+		Errors = append(Errors, errors.New("username already registered"))
+	}
+
+	return Errors
 }
 
-func validation(userData User) {
-  var buf bytes.Buffer
-  if(len(userData.Username) == 0){
-    buf.WriteString("Username is required field\n")
-  } 
-  if(len(userData.Email) == 0){
-    buf.WriteString("Email is required field\n")
-  }
-  if(len(userData.Password) == 0){
-    buf.WriteString("Password is required field\n")
-  }
-  if buf.Len() > 0 {
-    fmt.Println(buf.String())
-  }
-  // return 
+func validation(userData User) []error {
+	var err []error
+
+	if len(userData.Username) == 0 {
+		err = append(err, errors.New("username is required field"))
+	}
+	if len(userData.Email) == 0 {
+		err = append(err, errors.New("email is required field"))
+	}
+	if len(userData.Password) == 0 {
+		err = append(err, errors.New("password is required field"))
+	}
+
+	return err
 }
 
-func findUser(userData User) (int, error) {
-  for i, v := range Users {
-    if v.Email == userData.Email ||
-       v.Username == userData.Username {
-         return i, nil
-       }
-  }
+func findUser(params ...interface{}) (interface{}, error) {
+	userData, ok := params[0].(User)
+	if ok {
+		dbCon := db.GetConnection()
+		var user User
 
-  return -1, errors.New("User not found")
+		rows, err := dbCon.Query("select * from Users where email = ? or username = ?", userData.Email, userData.Username)
+		if err != nil {
+			return nil, err
+		}
+
+		defer rows.Close()
+
+		// Under normal circumstances, there will be only one record
+		rows.Next()
+		err = rows.Scan(&user.UserId, &user.Email, &user.Username, &user.Password, &user.CreatedAt)
+
+		if err != nil {
+			return nil, err
+		}
+
+		return user, nil
+
+	} else {
+		username, ok := params[0].(string)
+		if ok {
+			dbCon := db.GetConnection()
+			var user User
+
+			rows, err := dbCon.Query("select * from Users where username = ?", username)
+			if err != nil {
+				return -1, err
+			}
+
+			defer rows.Close()
+
+			// Under normal circumstances, there will be only one record
+			rows.Next()
+			err = rows.Scan(&user.UserId, &user.Email, &user.Username, &user.Password, &user.CreatedAt)
+			if err != nil {
+				return nil, err
+			}
+
+			return user, nil
+		} else {
+			return nil, errors.New("unknown parameter passed")
+		}
+	}
 }
 
-func GetUser(userData User) User {
-  realUserId, err := findUser(userData)
+func GetUser(userData User) (User, error) {
+	user, err := findUser(userData)
 
-  if err != nil {
-    log.Println(err)
-    return User{}
-  }
+	if err != nil {
+		log.Println(err)
+		return User{}, err
+	}
 
-  return Users[realUserId]
+	return user.(User), nil
 }
 
-func AddUser(userData User) (error) {
+func AddUser(userData User) []error {
+	var Errors []error
 
-  // request validation
-  validation(userData)
-  
-  err := checkUserExistance(userData)
-  if err == nil {
-    lastElementIndex := len(Users) - 1
-    if lastElementIndex < 0 {
-      userData.UserId = 0
-    } else {
-      userData.UserId = Users[lastElementIndex].UserId + 1
-    }
+	// request validation
+	Errors = append(Errors, validation(userData)...)
 
-    userData.CreatedAt = time.Now()
-    Users = append(Users, userData)
-    return nil
-  } else {
-    return err
-  }
+	Errors = append(Errors, checkUserExistance(userData)...)
+
+	if Errors == nil {
+		dbCon := db.GetConnection()
+
+		_, err := dbCon.Exec("insert into Users values (default, ?, ?, ?, CURRENT_TIME())", userData.Email, userData.Username, userData.Password)
+
+		if err != nil {
+			Errors = append(Errors, err)
+			return Errors
+		}
+
+		return nil
+	} else {
+		return Errors
+	}
 }
 
-func DeleteUser(userData User) (bool, error) {
-  i, err := findUser(userData)
-  
-  if err != nil {
-    Users = append(Users[:i], Users[i+1])
-    return true, nil
-  }
+func DeleteUser(userData User) error {
+	user, err := findUser(userData)
 
-  return false, err
+	if err != nil {
+		return err
+	}
+
+	dbCon := db.GetConnection()
+
+	_, err = dbCon.Exec("delete from Users where userID = ?", user.(User).UserId)
+
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func EditUser(currentUsername string, userData User) []error {
+	var Errors []error
+	// request validation
+	Errors = append(Errors, validation(userData)...)
+
+	user, err := findUser(currentUsername)
+
+	if err != nil {
+		Errors = append(Errors, err)
+		return Errors
+	}
+
+	if user.(User).Password != userData.Password {
+		Errors = append(Errors, errors.New("password doesn't match"))
+		return Errors
+	}
+
+	err_array := checkUserExistance(userData)
+	if err != nil {
+		Errors = append(Errors, err_array...)
+		return Errors
+	}
+
+	dbCon := db.GetConnection()
+
+	_, err = dbCon.Exec("update Users set email = ?, username = ?, password = ? where userID = ?", userData.Email, userData.Username, userData.Password, user.(User).UserId)
+
+	if err != nil {
+		Errors = append(Errors, err)
+		return Errors
+	}
+
+	return nil
+
 }
