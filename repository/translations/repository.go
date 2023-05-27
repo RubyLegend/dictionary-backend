@@ -46,29 +46,30 @@ func validation(translationData Translation) []error {
 	}
 	return err
 }
-func findTranslation(params ...interface{}) (int, error) {
-	translationData, ok := params[0].(Translation)
-	if ok {
-		for i, v := range Translations {
-			if v.Name == translationData.Name {
-				return i, nil
-			}
-		}
-	} else {
-		name, ok := params[0].(string)
-		if ok {
-			for i, v := range Translations {
-				if v.Name == name {
-					return i, nil
-				}
-			}
-		} else {
-			return -1, errors.New("Unknown parameter passed")
-		}
-	}
 
-	return -1, errors.New("Translation not found")
-}
+// func findTranslation(params ...interface{}) (int, error) {
+// 	translationData, ok := params[0].(Translation)
+// 	if ok {
+// 		for i, v := range Translations {
+// 			if v.Name == translationData.Name {
+// 				return i, nil
+// 			}
+// 		}
+// 	} else {
+// 		name, ok := params[0].(string)
+// 		if ok {
+// 			for i, v := range Translations {
+// 				if v.Name == name {
+// 					return i, nil
+// 				}
+// 			}
+// 		} else {
+// 			return -1, errors.New("Unknown parameter passed")
+// 		}
+// 	}
+
+//		return -1, errors.New("Translation not found")
+//	}
 func GetTranslation(TranslationId int) ([]error, Translation) {
 	var err []error
 	Translations = append(Translations, Translation{TranslationId: 1, WordId: 1, Name: "ehgfwe", Language: "ehgfwe"})
