@@ -2,7 +2,9 @@ package translations
 
 import (
 	"errors"
-	"strconv"
+
+	
+	db "github.com/RubyLegend/dictionary-backend/middleware/database"
 )
 
 type Translation struct {
@@ -11,19 +13,21 @@ type Translation struct {
 	Name          string `json:"name"`
 	Language      string `json:"language"`
 }
+type TranslationWithWordId struct {
+	Name         string `json:"name"`
+	DictionaryId int    `json:"dictionaryId"`
+}
 
-var Translations []Translation
+func checkTranslationExistance(WordId int, Name string) error {
+	dbCon := db.GetConnection()
+	var res int
+	err := dbCon.QueryRow("select count(*) from Translations where binary Name = binary ? and wordID = ?", Name, WordId).Scan(&res)
 
-func checkTranslationExistance(translationData Translation) []error {
-	var err []error
-
-	for _, v := range Translations {
-		if v.Name == translationData.Name && v.WordId == translationData.WordId {
-			err = append(err, errors.New("translation "+translationData.Name+" already exists"))
-		}
+	if err != nil {
+		return err
 	}
 
-	return err
+	return nil
 }
 
 func validation(translationData Translation) []error {
@@ -32,145 +36,146 @@ func validation(translationData Translation) []error {
 	if len(translationData.Name) == 0 {
 		err = append(err, errors.New("name is required field"))
 	}
-	// found := false
-	// for _, translation := range wordsRepo.Words {
-	// 	if translation.WordId == translationData.WordId {
-	// 		found = true
-	// 		break
-	// 	}
-	// }
-	// if !found {
-	// 	err = append(err, errors.New("occured some error"))
-	// }
-	return err
-}
+	
+	dbCon := db.GetConnection()
 
-// func findTranslation(params ...interface{}) (int, error) {
-// 	translationData, ok := params[0].(Translation)
-// 	if ok {
-// 		for i, v := range Translations {
-// 			if v.Name == translationData.Name {
-// 				return i, nil
-// 			}
-// 		}
-// 	} else {
-// 		name, ok := params[0].(string)
-// 		if ok {
-// 			for i, v := range Translations {
-// 				if v.Name == name {
-// 					return i, nil
-// 				}
-// 			}
-// 		} else {
-// 			return -1, errors.New("Unknown parameter passed")
-// 		}
-// 	}
+	var res int
+	err2 := dbCon.QueryRow("select count(*) from Words where wordID = ?", WordId).Scan(&res)
 
-//		return -1, errors.New("Translation not found")
-//	}
-func GetTranslation(TranslationId int) ([]error, Translation) {
-	var err []error
-	Translations = append(Translations, Translation{TranslationId: 1, WordId: 1, Name: "ehgfwe", Language: "ehgfwe"})
-	var FinedTranslation Translation
-
-	for _, v := range Translations {
-		if v.TranslationId == TranslationId {
-			FinedTranslation = v
-		}
-	}
-
-	if (FinedTranslation == Translation{}) {
-		err = append(err, errors.New("translation not found"))
-	}
-
-	return err, FinedTranslation
-}
-
-func AddTranslation(translationData Translation) []error {
-	var err []error
-
-	err = append(err, validation(translationData)...)
-	err = append(err, checkTranslationExistance(translationData)...)
-
-	if err == nil {
-		lastElementIndex := len(Translations) - 1
-		if lastElementIndex < 0 {
-			translationData.WordId = 0
-		} else {
-			translationData.WordId = Translations[lastElementIndex].WordId + 1
-		}
-
-		Translations = append(Translations, translationData)
-
-		return nil
-	} else {
-		return nil
-	}
-}
-
-func DeleteTranslation(WordId int, TranslationId string) []error {
-	var err []error
-	id, error := strconv.Atoi(TranslationId)
-
-	if error != nil {
-		err = append(err, errors.New("invalid id params"))
+	if err2 != nil {
+		err = append(err, err2)
 		return err
 	}
 
-	var isDeleted = false
-	for i, v := range Translations {
-		if v.WordId == WordId && v.TranslationId == id {
-			Translations = append(Translations[:i], Translations[i+1:]...)
-			isDeleted = true
-			break
-		}
-	}
-
-	if !isDeleted {
+	if res == 0 {
 		err = append(err, errors.New("translation not found"))
 	}
 
 	return err
 }
-func updateValidation(translationData Translation) []error {
-	var err []error
-	var isFieldInRequest = false
-	if len(translationData.Name) != 0 {
-		isFieldInRequest = true
+
+func GetTranslation(WordId int) ([]Translation, error) {
+	var Translations []Translation
+	dbCon := db.GetConnection()
+
+	rows, err := dbCon.Query("select * from Translations where wordID = ?", WordId)
+
+	if err != nil {
+		return nil, err
 	}
-	if len(translationData.Language) != 0 {
-		isFieldInRequest = true
+
+	defer rows.Close()
+
+	for rows.Next() {
+		var trans Translation
+		err = rows.Scan(&trans.TranslationId, &trans.WordId, &trans.Name, &trans.Language)
+		if err != nil {
+			return nil, err
+		}
+		Translations = append(Translations, trans)
 	}
-	if !isFieldInRequest {
-		err = append(err, errors.New("incorrect body"))
+
+	if len(Translations) == 0 {
+		return []Translation{}, nil
 	}
-	return err
+
+	return Translations, nil
+}
+func postValidation(translationData Translation) error {
+
+	if len(translationData.Name) == 0 {
+		return errors.New("name is required field")
+	}
+
+	return nil
 }
 
-func UpdateTranslation(WordId int, TranslationId string, translationData Translation) ([]error, Translation) {
-	var err []error
-	id, error := strconv.Atoi(TranslationId)
+func AddTranslation(translationData Translation) (int, Translation,error) {
+	
+	err := postValidation(translationData)
 
-	if error != nil {
-		err = append(err, errors.New("invalid id params"))
+	if err != nil {
+		return -1, Translation{}, err
 	}
 
-	err = append(err, updateValidation(translationData)...)
+	err = checkTranslationExistance(translationData)
 
-	var UpdatedTranslation Translation
-	if err == nil {
-		for i, v := range Translations {
-			if v.WordId == WordId && v.TranslationId == id {
-				Translations[i] = translationData
-				UpdatedTranslation = Translations[i]
-				break
-			}
-		}
-		if UpdatedTranslation == (Translation{}) {
-			err = append(err, errors.New("translation not found"))
-		}
+	if err != nil {
+		return -1, Translation{}, err
 	}
 
-	return err, UpdatedTranslation
+	dbCon := db.GetConnection()
 
+	res, err := dbCon.Exec("insert into Words values (default, ?, CURRENT_TIMESTAMP(), default)", wordData.Name)
+
+	if err != nil {
+		return -1, Word{}, err
+	}
+
+	lastId, err := res.LastInsertId()
+
+	wordData.WordId = int(lastId)
+	wordData.CreatedAt = time.Now()
+
+	return int(lastId), wordData, err
+}
+
+func updateValidation(translationData Translation) error {
+	if len(translationData.Name) == 0 {
+		return errors.New("new dictionary name not supplied")
+	}
+	if len(translationData.Language) == 0 {
+		return errors.New("new dictionary language not supplied")
+	}
+
+	return nil
+}
+
+func UpdateTranslation(translationData Translation)error {
+	err := updateValidation(translationData)
+
+	if err != nil {
+		return Translation{}, err
+	}
+
+	err = checkTranslationExistence(WordId, translationData.Name)
+	if err != nil {
+		return Translation{}, err
+	}
+
+	dbCon := db.GetConnection()
+
+	_, err = dbCon.Exec("update Translation set name = ?, language = ? where translationID = ?", translationData.Name, TranslationId)
+
+	if err != nil {
+		return Translation{}, err
+	}
+
+	row := dbCon.QueryRow("select * from Translations where translationID = ?", TranslationId)
+
+	var trans Translation
+
+	err = row.Scan(&trans.TranslationId, &trans.WordId, &trans.Name, &trans.Language)
+
+	if err != nil {
+		return Translation{}, err
+	}
+
+	return trans, nil
+}
+
+func DeleteTranslation(translationData Translation) error {
+	dbCon := db.GetConnection()
+
+	res, err:= dbCon.Exec("delete from Translations where translationID = ? and wordID = ?", TranslationId, WordId)
+
+	if err != nil {
+		return err
+	}
+
+	if rows, _ := res.RowsAffected(); rows == 0 {
+		return errors.New("this translation doesn't exist")
+	}
+
+	return nil
 }
