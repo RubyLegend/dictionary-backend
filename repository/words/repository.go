@@ -8,13 +8,15 @@ import (
 
 	db "github.com/RubyLegend/dictionary-backend/middleware/database"
 	dictionaryToWordsRepo "github.com/RubyLegend/dictionary-backend/repository/dictionaryToWords"
+	translationRepo "github.com/RubyLegend/dictionary-backend/repository/translations"
 )
 
 type Word struct {
-	WordId    int       `json:"id"`
-	Name      string    `json:"name"`
-	CreatedAt time.Time `json:"createdAt"`
-	IsLearned bool      `json:"isLearned"`
+	WordId      int       `json:"id"`
+	Name        string    `json:"name"`
+	CreatedAt   time.Time `json:"createdAt"`
+	IsLearned   bool      `json:"isLearned"`
+	Translation string    `json:"translation"`
 }
 
 type WordWithDictId struct {
@@ -64,7 +66,7 @@ func WordIDtoWords(dictToWords []dictionaryToWordsRepo.DictionaryToWords) ([]Wor
 
 	dbCon := db.GetConnection()
 
-	query, args, err := sqlx.In("select * from Words where wordID in (?) order by createdAt desc", wordIds)
+	query, args, err := sqlx.In("select w.*, t.name from Words w join Translation t on t.wordID = w.WordID where w.wordID in (?) order by createdAt desc", wordIds)
 
 	if err != nil {
 		return nil, err
@@ -79,7 +81,7 @@ func WordIDtoWords(dictToWords []dictionaryToWordsRepo.DictionaryToWords) ([]Wor
 
 	for rows.Next() {
 		var word Word
-		err = rows.Scan(&word.WordId, &word.Name, &word.CreatedAt, &word.IsLearned)
+		err = rows.Scan(&word.WordId, &word.Name, &word.CreatedAt, &word.IsLearned, &word.Translation)
 		if err != nil {
 			return nil, err
 		}
@@ -122,14 +124,22 @@ func AddWord(wordData Word) (int, Word, error) {
 func UpdateWord(wordData Word) error {
 	dbCon := db.GetConnection()
 
-	res, err := dbCon.Exec("update Words set name = ? where wordId = ?", wordData.Name, wordData.WordId)
+	_, err := dbCon.Exec("update Words set name = ? where wordId = ?", wordData.Name, wordData.WordId)
 
 	if err != nil {
 		return err
 	}
 
-	if rows, _ := res.RowsAffected(); rows == 0 {
-		return errors.New("this word doesn't exist")
+	var translationData translationRepo.Translation
+	translationData.WordId = wordData.WordId
+	translationData.Name = wordData.Translation
+	err = translationRepo.UpdateTranslation(translationData)
+
+	if err != nil {
+		err = translationRepo.AddTranslation(wordData.WordId, wordData.Translation)
+		if err != nil {
+			return err
+		}
 	}
 
 	return nil

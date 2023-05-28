@@ -25,19 +25,22 @@ func HistoryGet(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 
 		if err != nil {
 			resp["error"] = []string{err.Error()}
+			_ = json.NewEncoder(w).Encode(resp)
 			w.WriteHeader(http.StatusNotFound)
 		} else {
 			history, err := historyRepo.GetHistory(userData.UserId)
 
 			if err != nil {
 				resp["error"] = []string{err.Error()}
+				_ = json.NewEncoder(w).Encode(resp)
 				w.WriteHeader(http.StatusBadRequest)
 			} else {
-				resp["history"] = history
+				_ = json.NewEncoder(w).Encode(history)
 			}
 		}
+	} else {
+		_ = json.NewEncoder(w).Encode(resp)
 	}
-	_ = json.NewEncoder(w).Encode(resp)
 }
 
 func HistoryDelete(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {

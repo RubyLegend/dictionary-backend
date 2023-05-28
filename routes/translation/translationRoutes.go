@@ -15,14 +15,10 @@ func TranslationGet(w http.ResponseWriter, r *http.Request, _ httprouter.Params)
 
 	resp := make(map[string]any)
 
-	errors, translation := translationRepo.GetTranslation(WordId)
+	translation, err := translationRepo.GetTranslation(WordId)
 
-	if len(errors) > 0 {
-		var errorMessages []string
-		for _, v := range errors {
-			errorMessages = append(errorMessages, v.Error())
-		}
-		resp["error"] = errorMessages
+	if err != nil {
+		resp["error"] = []string{err.Error()}
 		w.WriteHeader(http.StatusBadRequest)
 	} else {
 		resp["translation"] = translation
@@ -42,13 +38,9 @@ func TranslationPost(w http.ResponseWriter, r *http.Request, _ httprouter.Params
 	resp := make(map[string]any)
 	translationData.WordId = WordId
 
-	err := translationRepo.AddTranslation(translationData)
+	err := translationRepo.AddTranslation(WordId, translationData.Name)
 	if err != nil {
-		var errors []string
-		for _, v := range err {
-			errors = append(errors, v.Error())
-		}
-		resp["error"] = errors
+		resp["error"] = []string{err.Error()}
 		w.WriteHeader(http.StatusBadRequest)
 	} else {
 		w.WriteHeader(http.StatusOK)
@@ -60,21 +52,20 @@ func TranslationDelete(w http.ResponseWriter, r *http.Request, p httprouter.Para
 	w.Header().Set("Content-Type", "application/json")
 	resp := make(map[string]any)
 
-	var WordId int = 2
-	TranslationId := p.ByName("id")
+	// TranslationId := p.ByName("id")
 
-	errors := translationRepo.DeleteTranslation(WordId, TranslationId)
+	// errors := translationRepo.DeleteTranslation()
 
-	if len(errors) > 0 {
-		var errorMessages []string
-		for _, v := range errors {
-			errorMessages = append(errorMessages, v.Error())
-		}
-		resp["error"] = errorMessages
-		w.WriteHeader(http.StatusBadRequest)
-	} else {
-		w.WriteHeader(http.StatusOK)
-	}
+	// if len(errors) > 0 {
+	// 	var errorMessages []string
+	// 	for _, v := range errors {
+	// 		errorMessages = append(errorMessages, v.Error())
+	// 	}
+	// 	resp["error"] = errorMessages
+	// 	w.WriteHeader(http.StatusBadRequest)
+	// } else {
+	// 	w.WriteHeader(http.StatusOK)
+	// }
 	_ = json.NewEncoder(w).Encode(resp)
 }
 
@@ -82,25 +73,25 @@ func TranslationPatch(w http.ResponseWriter, r *http.Request, p httprouter.Param
 	w.Header().Set("Content-Type", "application/json")
 	resp := make(map[string]any)
 
-	var WordId int = 2
-	TranslationId := p.ByName("id")
+	// var WordId int = 2
+	// TranslationId := p.ByName("id")
 
-	var translationData translationRepo.Translation
-	_ = json.NewDecoder(r.Body).Decode(&translationData)
+	// var translationData translationRepo.Translation
+	// _ = json.NewDecoder(r.Body).Decode(&translationData)
 
-	errors, UpdatedTranslation := translationRepo.UpdateTranslation(WordId, TranslationId, translationData)
+	// errors, UpdatedTranslation := translationRepo.UpdateTranslation(WordId, TranslationId, translationData)
 
-	if len(errors) > 0 {
-		var errorMessages []string
-		for _, v := range errors {
-			errorMessages = append(errorMessages, v.Error())
-		}
-		resp["error"] = errorMessages
-		w.WriteHeader(http.StatusBadRequest)
-	} else {
-		resp["translation"] = UpdatedTranslation
-		w.WriteHeader(http.StatusOK)
-	}
+	// if len(errors) > 0 {
+	// 	var errorMessages []string
+	// 	for _, v := range errors {
+	// 		errorMessages = append(errorMessages, v.Error())
+	// 	}
+	// 	resp["error"] = errorMessages
+	// 	w.WriteHeader(http.StatusBadRequest)
+	// } else {
+	// 	resp["translation"] = UpdatedTranslation
+	// 	w.WriteHeader(http.StatusOK)
+	// }
 	_ = json.NewEncoder(w).Encode(resp)
 
 }

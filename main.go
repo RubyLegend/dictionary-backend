@@ -49,9 +49,15 @@ func main() {
 	}) // done
 
 	router.POST("/api/v1/translation", translationRoutes.TranslationPost)
-	router.DELETE("/api/v1/translation/:id", translationRoutes.TranslationDelete)
 	router.GET("/api/v1/translation", translationRoutes.TranslationGet)
+	router.OPTIONS("/api/v1/translation", func(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+		cors.Setup(w, r)
+	}) // done
+	router.DELETE("/api/v1/translation/:id", translationRoutes.TranslationDelete)
 	router.PATCH("/api/v1/translation/:id", translationRoutes.TranslationPatch)
+	router.OPTIONS("/api/v1/translation/:id", func(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+		cors.Setup(w, r)
+	}) // done
 
 	router.POST("/api/v1/user/login", userRoutes.UserLogin) // done
 	router.OPTIONS("/api/v1/user/login", func(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {

@@ -6,6 +6,7 @@ import (
 
 	db "github.com/RubyLegend/dictionary-backend/middleware/database"
 	dictionaryToWordsRepo "github.com/RubyLegend/dictionary-backend/repository/dictionaryToWords"
+	translationRepo "github.com/RubyLegend/dictionary-backend/repository/translations"
 	wordsRepo "github.com/RubyLegend/dictionary-backend/repository/words"
 )
 
@@ -119,6 +120,12 @@ func AddDictionary(UserId int, dictionaryData DictionaryPost) []error {
 
 	for _, v := range dictionaryData.Words {
 		lastId, _, err2 := wordsRepo.AddWord(v)
+		if err2 != nil {
+			return []error{err2}
+		}
+
+		err2 = translationRepo.AddTranslation(lastId, v.Translation)
+
 		if err2 != nil {
 			return []error{err2}
 		}

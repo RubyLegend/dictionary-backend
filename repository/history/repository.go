@@ -41,7 +41,7 @@ func GetHistory(UserId int) ([]History, error) {
 	var Histories []History
 	dbCon := db.GetConnection()
 
-	rows, err := dbCon.Query("select * from Histories where userID = ?", UserId)
+	rows, err := dbCon.Query("select * from History where userID = ?", UserId)
 
 	if err != nil {
 		return nil, err
@@ -67,7 +67,7 @@ func GetHistory(UserId int) ([]History, error) {
 func DeleteHistory(UserId int, HistoryId int) error {
 	dbCon := db.GetConnection()
 
-	_, error := dbCon.Exec("delete from Histories where historyID = ? and userID = ?", HistoryId, UserId)
+	_, error := dbCon.Exec("delete from History where historyID = ? and userID = ?", HistoryId, UserId)
 
 	if error != nil {
 		return error
