@@ -45,7 +45,7 @@ wordID int not null,
 Foreign key(dictionaryID) references Dictionaries(dictionaryID)
 on delete cascade,
 Foreign key(wordID) references Words(wordID)
-on delete no action
+on delete cascade
 );
 
 Create table Translation (
