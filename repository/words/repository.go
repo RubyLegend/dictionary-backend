@@ -2,11 +2,8 @@ package words
 
 import (
 	"errors"
-
-	// "log"
 	"time"
-	//   "fmt"
-	//   "bytes"
+
 	"github.com/jmoiron/sqlx"
 
 	db "github.com/RubyLegend/dictionary-backend/middleware/database"
@@ -17,6 +14,7 @@ type Word struct {
 	WordId    int       `json:"id"`
 	Name      string    `json:"name"`
 	CreatedAt time.Time `json:"createdAt"`
+	IsLearned bool      `json:"isLearned"`
 }
 
 type WordWithDictId struct {
@@ -81,7 +79,7 @@ func WordIDtoWords(dictToWords []dictionaryToWordsRepo.DictionaryToWords) ([]Wor
 
 	for rows.Next() {
 		var word Word
-		err = rows.Scan(&word.WordId, &word.Name, &word.CreatedAt)
+		err = rows.Scan(&word.WordId, &word.Name, &word.CreatedAt, &word.IsLearned)
 		if err != nil {
 			return nil, err
 		}
@@ -107,7 +105,7 @@ func AddWord(wordData Word) (int, Word, error) {
 
 	dbCon := db.GetConnection()
 
-	res, err := dbCon.Exec("insert into Words values (default, ?, CURRENT_TIMESTAMP())", wordData.Name)
+	res, err := dbCon.Exec("insert into Words values (default, ?, CURRENT_TIMESTAMP(), default)", wordData.Name)
 
 	if err != nil {
 		return -1, Word{}, err
