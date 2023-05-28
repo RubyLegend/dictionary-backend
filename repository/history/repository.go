@@ -1,8 +1,9 @@
 package history
 
 import (
-	"errors"
 	"time"
+
+	db "github.com/RubyLegend/dictionary-backend/middleware/database"
 )
 
 type History struct {
@@ -36,39 +37,41 @@ var Histories []History
 //	return History{}, fmt.Errorf("history with ID %d not found", historyID)
 //}
 
-func GetHistory(historyId int) ([]error, History) {
-	var err []error
-	Histories = append(Histories, History{HistoryId: 1, UserId: 1, WordId: 1, IsCorrect: true, CreatedAt: time.Now()})
-	var foundHistory History
+func GetHistory(UserId int) ([]History, error) {
+	var Histories []History
+	dbCon := db.GetConnection()
 
-	for _, v := range Histories {
-		if v.HistoryId == historyId {
-			foundHistory = v
-			break
+	rows, err := dbCon.Query("select * from Histories where userID = ?", UserId)
+
+	if err != nil {
+		return nil, err
+	}
+
+	defer rows.Close()
+
+	for rows.Next() {
+		var hist History
+		err = rows.Scan(&hist.HistoryId, &hist.UserId, &hist.WordId, &hist.IsCorrect, &hist.CreatedAt)
+		if err != nil {
+			return nil, err
 		}
+		Histories = append(Histories, hist)
 	}
 
-	if (foundHistory == History{}) {
-		err = append(err, errors.New("history not found"))
+	if len(Histories) == 0 {
+		return []History{}, nil
 	}
 
-	return err, foundHistory
+	return Histories, nil
 }
-func DeleteHistory(userId, historyId int) []error {
-	var err []error
-	var isDeleted = false
+func DeleteHistory(UserId int, HistoryId int) error {
+	dbCon := db.GetConnection()
 
-	for i, v := range Histories {
-		if v.UserId == userId && v.HistoryId == historyId {
-			Histories = append(Histories[:i], Histories[i+1:]...)
-			isDeleted = true
-			break
-		}
+	_, error := dbCon.Exec("delete from Histories where historyID = ? and userID = ?", HistoryId, UserId)
+
+	if error != nil {
+		return error
 	}
 
-	if !isDeleted {
-		err = append(err, errors.New("history not found"))
-	}
-
-	return err
+	return nil
 }
