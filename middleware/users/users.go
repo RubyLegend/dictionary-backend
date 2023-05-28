@@ -158,7 +158,7 @@ func VerifyCredentials(userData userRepo.User) (userRepo.User, []error) {
 
 	var errors []error
 	if user.Email != userData.Email {
-		errors = append(errors, fmt.Errorf("email not found"))
+		errors = append(errors, fmt.Errorf("user not found"))
 	}
 
 	if user.Password != userData.Password {
