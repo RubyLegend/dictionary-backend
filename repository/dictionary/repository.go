@@ -2,9 +2,12 @@ package dictionary
 
 import (
 	"errors"
+	"log"
 	"time"
 
 	db "github.com/RubyLegend/dictionary-backend/middleware/database"
+	dictionaryToWordsRepo "github.com/RubyLegend/dictionary-backend/repository/dictionaryToWords"
+	wordsRepo "github.com/RubyLegend/dictionary-backend/repository/words"
 )
 
 type Dictionary struct {
@@ -15,12 +18,17 @@ type Dictionary struct {
 	Total        int       `json:"total"`
 }
 
+type DictionaryPost struct {
+	Name  string           `json:"dictionaryName"`
+	Words []wordsRepo.Word `json:"words"`
+}
+
 var Dictionaries []Dictionary
 
-func checkDictionaryExistance(dictionaryData Dictionary) error {
+func CheckDictionaryExistance(UserId int, Name string) error {
 	dbCon := db.GetConnection()
 	var res int
-	err := dbCon.QueryRow("select count(*) from Dictionaries where Name = ? and userID = ?", dictionaryData.Name, dictionaryData.UserId).Scan(&res)
+	err := dbCon.QueryRow("select count(*) from Dictionaries where binary Name = binary ? and userID = ?", Name, UserId).Scan(&res)
 
 	if err != nil {
 		return err
@@ -33,7 +41,7 @@ func checkDictionaryExistance(dictionaryData Dictionary) error {
 	return nil
 }
 
-func postValidation(dictionaryData Dictionary) []error {
+func postValidation(UserId int, dictionaryData DictionaryPost) []error {
 	var err []error
 
 	if len(dictionaryData.Name) == 0 {
@@ -43,7 +51,7 @@ func postValidation(dictionaryData Dictionary) []error {
 	dbCon := db.GetConnection()
 
 	var res int
-	err2 := dbCon.QueryRow("select count(*) from Users where userID = ?", dictionaryData.UserId).Scan(&res)
+	err2 := dbCon.QueryRow("select count(*) from Users where userID = ?", UserId).Scan(&res)
 
 	if err2 != nil {
 		err = append(err, err2)
@@ -85,29 +93,44 @@ func GetDictionary(UserId int) ([]Dictionary, error) {
 	return Dictionaries, nil
 }
 
-func AddDictionary(dictionaryData Dictionary) []error {
-	var err []error
-
-	err2 := postValidation(dictionaryData)
-	if err2 != nil {
-		err = append(err, err2...)
-	}
-
-	err3 := checkDictionaryExistance(dictionaryData)
-	if err3 != nil {
-		err = append(err, err3)
-	}
-
+func AddDictionary(UserId int, dictionaryData DictionaryPost) []error {
+	err := postValidation(UserId, dictionaryData)
 	if err != nil {
 		return err
 	}
 
+	err2 := CheckDictionaryExistance(UserId, dictionaryData.Name)
+	if err2 != nil {
+		return []error{err2}
+	}
+
 	dbCon := db.GetConnection()
 
-	_, err3 = dbCon.Exec("insert into Dictionaries values (default, ?, ?, CURRENT_TIMESTAMP(), default)", dictionaryData.UserId, dictionaryData.Name)
+	res, err2 := dbCon.Exec("insert into Dictionaries values (default, ?, ?, CURRENT_TIMESTAMP(), default)", UserId, dictionaryData.Name)
 
-	if err3 != nil {
-		err = append(err, err3)
+	if err2 != nil {
+		return []error{err2}
+	}
+
+	lastDictionaryId, err2 := res.LastInsertId()
+
+	if err2 != nil {
+		return []error{err2}
+	}
+
+	for i, v := range dictionaryData.Words {
+		lastId, err2 := wordsRepo.AddWord(v)
+		if err2 != nil {
+			return []error{err2}
+		}
+
+		err2 = dictionaryToWordsRepo.AddConnection(int(lastDictionaryId), lastId)
+
+		if err2 != nil {
+			return []error{err2}
+		}
+
+		log.Println(i, v)
 	}
 
 	return err
@@ -140,11 +163,7 @@ func UpdateDictionary(UserId int, DictionaryId int, dictionaryData Dictionary) (
 		return Dictionary{}, err
 	}
 
-	var dictWithUserId Dictionary
-	dictWithUserId.UserId = UserId
-	dictWithUserId.Name = dictionaryData.Name
-
-	err = checkDictionaryExistance(dictWithUserId)
+	err = CheckDictionaryExistance(UserId, dictionaryData.Name)
 	if err != nil {
 		return Dictionary{}, err
 	}
