@@ -22,11 +22,13 @@ type Word struct {
 type WordWithDictId struct {
 	Name         string `json:"name"`
 	DictionaryId int    `json:"dictionaryId"`
+	Translation  string `json:"translation"`
 }
 
 func (wordData WordWithDictId) ConvertToWord() Word {
 	var word Word
 	word.Name = wordData.Name
+	word.Translation = wordData.Translation
 
 	return word
 }
@@ -66,7 +68,7 @@ func WordIDtoWords(dictToWords []dictionaryToWordsRepo.DictionaryToWords) ([]Wor
 
 	dbCon := db.GetConnection()
 
-	query, args, err := sqlx.In("select w.*, t.name from Words w join Translation t on t.wordID = w.WordID where w.wordID in (?) order by createdAt desc", wordIds)
+	query, args, err := sqlx.In("select w.*, t.name from Words w left join Translation t on t.wordID = w.WordID where w.wordID in (?) order by createdAt desc", wordIds)
 
 	if err != nil {
 		return nil, err
@@ -114,6 +116,15 @@ func AddWord(wordData Word) (int, Word, error) {
 	}
 
 	lastId, err := res.LastInsertId()
+
+	if err != nil {
+		return -1, Word{}, err
+	}
+
+	err = translationRepo.AddTranslation(int(lastId), wordData.Translation)
+	if err != nil {
+		return -1, Word{}, err
+	}
 
 	wordData.WordId = int(lastId)
 	wordData.CreatedAt = time.Now()
