@@ -3,8 +3,6 @@ package translations
 import (
 	"errors"
 	"strconv"
-
-	wordsRepo "github.com/RubyLegend/dictionary-backend/repository/words"
 )
 
 type Translation struct {
@@ -34,16 +32,16 @@ func validation(translationData Translation) []error {
 	if len(translationData.Name) == 0 {
 		err = append(err, errors.New("name is required field"))
 	}
-	found := false
-	for _, translation := range wordsRepo.Words {
-		if translation.WordId == translationData.WordId {
-			found = true
-			break
-		}
-	}
-	if !found {
-		err = append(err, errors.New("occured some error"))
-	}
+	// found := false
+	// for _, translation := range wordsRepo.Words {
+	// 	if translation.WordId == translationData.WordId {
+	// 		found = true
+	// 		break
+	// 	}
+	// }
+	// if !found {
+	// 	err = append(err, errors.New("occured some error"))
+	// }
 	return err
 }
 

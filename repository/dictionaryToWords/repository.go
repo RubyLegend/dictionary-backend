@@ -35,3 +35,15 @@ func GetWords(DictionaryId int) ([]DictionaryToWords, error) {
 
 	return res, nil
 }
+
+func AddConnection(DictionaryId int, WordId int) error {
+	dbCon := db.GetConnection()
+
+	_, err := dbCon.Exec("insert into DictionariesWords values (?, ?)", DictionaryId, WordId)
+
+	if err != nil {
+		return err
+	}
+
+	return nil
+}

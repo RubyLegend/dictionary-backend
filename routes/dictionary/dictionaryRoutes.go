@@ -89,7 +89,7 @@ func DictionaryGetWords(w http.ResponseWriter, r *http.Request, ps httprouter.Pa
 func DictionaryPost(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	w.Header().Set("Content-Type", "application/json")
 	cors.Setup(w, r)
-	var dictionaryData dictionaryRepo.Dictionary
+	var dictionaryData dictionaryRepo.DictionaryPost
 	_ = json.NewDecoder(r.Body).Decode(&dictionaryData)
 	resp := make(map[string]any)
 
@@ -103,9 +103,7 @@ func DictionaryPost(w http.ResponseWriter, r *http.Request, _ httprouter.Params)
 			resp["error"] = []string{err.Error()}
 			w.WriteHeader(http.StatusNotFound)
 		} else {
-			dictionaryData.UserId = userData.UserId
-
-			err := dictionaryRepo.AddDictionary(dictionaryData)
+			err := dictionaryRepo.AddDictionary(userData.UserId, dictionaryData)
 			if err != nil {
 				var errors []string
 				for _, v := range err {
