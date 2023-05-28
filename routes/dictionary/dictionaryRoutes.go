@@ -53,9 +53,23 @@ func DictionaryGetWords(w http.ResponseWriter, r *http.Request, ps httprouter.Pa
 
 	claims := userHelper.VerifyJWT(w, r, resp)
 	if resp["error"] == nil {
+		page, err := strconv.Atoi(r.URL.Query().Get("page"))
+
+		if err != nil {
+			page = 0
+		} else {
+			page = page - 1
+		}
+
+		limit, err := strconv.Atoi(r.URL.Query().Get("limit"))
+
+		if err != nil {
+			limit = int(^uint(0) >> 1) // Magic value for upper limit of integer in Go
+		}
+
 		var userData userRepo.User
 		userData.Username = claims["username"].(string)
-		userData, err := userRepo.GetUser(userData)
+		userData, err = userRepo.GetUser(userData)
 
 		if err != nil {
 			resp["error"] = []string{err.Error()}
@@ -66,7 +80,7 @@ func DictionaryGetWords(w http.ResponseWriter, r *http.Request, ps httprouter.Pa
 			if err != nil {
 				resp["error"] = []string{err.Error()}
 			} else {
-				wordIds, err := dictionaryToWordsRepo.GetWords(DictionaryId)
+				wordIds, count, err := dictionaryToWordsRepo.GetWords(DictionaryId, page, limit)
 
 				if err != nil {
 					resp["error"] = []string{err.Error()}
@@ -78,6 +92,7 @@ func DictionaryGetWords(w http.ResponseWriter, r *http.Request, ps httprouter.Pa
 						w.WriteHeader(http.StatusInternalServerError)
 					} else {
 						resp["words"] = words
+						resp["count"] = count
 					}
 				}
 			}
@@ -89,7 +104,7 @@ func DictionaryGetWords(w http.ResponseWriter, r *http.Request, ps httprouter.Pa
 func DictionaryPost(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	w.Header().Set("Content-Type", "application/json")
 	cors.Setup(w, r)
-	var dictionaryData dictionaryRepo.Dictionary
+	var dictionaryData dictionaryRepo.DictionaryPost
 	_ = json.NewDecoder(r.Body).Decode(&dictionaryData)
 	resp := make(map[string]any)
 
@@ -103,9 +118,7 @@ func DictionaryPost(w http.ResponseWriter, r *http.Request, _ httprouter.Params)
 			resp["error"] = []string{err.Error()}
 			w.WriteHeader(http.StatusNotFound)
 		} else {
-			dictionaryData.UserId = userData.UserId
-
-			err := dictionaryRepo.AddDictionary(dictionaryData)
+			err := dictionaryRepo.AddDictionary(userData.UserId, dictionaryData)
 			if err != nil {
 				var errors []string
 				for _, v := range err {
