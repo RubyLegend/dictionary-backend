@@ -77,13 +77,14 @@ func main() {
 		cors.Setup(w, r)
 	}) // done
 
-	router.GET("/api/v1/dictionary", dictionaryRoutes.DictionaryGet)
-	router.POST("/api/v1/dictionary", dictionaryRoutes.DictionaryPost)
+	router.GET("/api/v1/dictionary", dictionaryRoutes.DictionaryGet)   // done
+	router.POST("/api/v1/dictionary", dictionaryRoutes.DictionaryPost) // done
 	router.OPTIONS("/api/v1/dictionary", func(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 		cors.Setup(w, r)
 	}) // done
-	router.PATCH("/api/v1/dictionary/:id", dictionaryRoutes.DictionaryPatch)
-	router.DELETE("/api/v1/dictionary/:id", dictionaryRoutes.DictionaryDelete)
+	router.GET("/api/v1/dictionary/:id", dictionaryRoutes.DictionaryGetWords)  // done
+	router.PATCH("/api/v1/dictionary/:id", dictionaryRoutes.DictionaryPatch)   // done
+	router.DELETE("/api/v1/dictionary/:id", dictionaryRoutes.DictionaryDelete) // done
 	router.OPTIONS("/api/v1/dictionary/:id", func(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 		cors.Setup(w, r)
 	}) // done

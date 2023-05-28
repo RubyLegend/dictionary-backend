@@ -2,10 +2,15 @@ package words
 
 import (
 	"errors"
+
 	// "log"
 	"time"
 	//   "fmt"
 	//   "bytes"
+	"github.com/jmoiron/sqlx"
+
+	db "github.com/RubyLegend/dictionary-backend/middleware/database"
+	dictionaryToWordsRepo "github.com/RubyLegend/dictionary-backend/repository/dictionaryToWords"
 )
 
 type Word struct {
@@ -43,13 +48,45 @@ func postValidation(wordData RequestType) []error {
 	var err []error
 
 	if len(wordData.Name) == 0 {
-		err = append(err, errors.New("Name is required field"))
+		err = append(err, errors.New("name is required field"))
 	}
 	if wordData.DictionaryId == 0 {
-		err = append(err, errors.New("DictionaryId is required field"))
+		err = append(err, errors.New("dictionaryId is required field"))
 	}
-	
+
 	return err
+}
+
+func WordIDtoWords(dictToWords []dictionaryToWordsRepo.DictionaryToWords) ([]Word, error) {
+	var words []Word
+	var wordIds []int
+
+	for _, v := range dictToWords {
+		wordIds = append(wordIds, v.WordId)
+	}
+
+	dbCon := db.GetConnection()
+
+	query, args, err := sqlx.In("select * from Words where wordID in (?)", wordIds)
+
+	if err != nil {
+		return nil, err
+	}
+
+	query = dbCon.Rebind(query)
+	rows, err := dbCon.Query(query, args...)
+
+	if err != nil {
+		return nil, err
+	}
+
+	for rows.Next() {
+		var word Word
+		rows.Scan(&word.WordId, &word.Name, &word.CreatedAt)
+		words = append(words, word)
+	}
+
+	return words, nil
 }
 
 func AddWord(wordData RequestType) []error {
@@ -76,11 +113,10 @@ func AddWord(wordData RequestType) []error {
 		}
 
 		newWord.CreatedAt = time.Now()
-		
+
 		Words = append(Words, newWord)
 		WordAndDictionaryTable = append(WordAndDictionaryTable, newConnection)
 
-	
 		return nil
 	} else {
 		return err

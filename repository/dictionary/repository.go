@@ -1,173 +1,164 @@
-package users
+package dictionary
 
 import (
 	"errors"
-	"strconv"
 	"time"
 
-	userRepo "github.com/RubyLegend/dictionary-backend/repository/users"
+	db "github.com/RubyLegend/dictionary-backend/middleware/database"
 )
 
 type Dictionary struct {
-	DictionaryId int       `json:"dictionaryId"`
+	DictionaryId int       `json:"id"`
 	UserId       int       `json:"userId"`
 	Name         string    `json:"name"`
 	CreatedAt    time.Time `json:"createdAt"`
+	Total        int       `json:"total"`
 }
 
 var Dictionaries []Dictionary
 
-func checkDictionaryExistance(dictionaryData Dictionary) []error {
-	var err []error
+func checkDictionaryExistance(dictionaryData Dictionary) error {
+	dbCon := db.GetConnection()
+	var res int
+	err := dbCon.QueryRow("select count(*) from Dictionaries where Name = ? and userID = ?", dictionaryData.Name, dictionaryData.UserId).Scan(&res)
 
-	// userRepo.Users = append(userRepo.Users, User{UserId: 1, Email: "ehgfwe", Password: "dssf", CreatedAt: time.Now()})
-
-	for _, v := range Dictionaries {
-		if v.Name == dictionaryData.Name && v.UserId == dictionaryData.UserId {
-			err = append(err, errors.New("Dictionary "+dictionaryData.Name+" already exists"))
-		}
+	if err != nil {
+		return err
 	}
 
-	return err
+	if res != 0 {
+		return errors.New("dictionary already exist")
+	}
+
+	return nil
 }
 
 func postValidation(dictionaryData Dictionary) []error {
 	var err []error
 
 	if len(dictionaryData.Name) == 0 {
-		err = append(err, errors.New("Name is required field"))
+		err = append(err, errors.New("name is required field"))
 	}
 
-	found := false
-	for _, user := range userRepo.Users {
-		if user.UserId == dictionaryData.UserId {
-			found = true
-			break
-		}
+	dbCon := db.GetConnection()
+
+	var res int
+	err2 := dbCon.QueryRow("select count(*) from Users where userID = ?", dictionaryData.UserId).Scan(&res)
+
+	if err2 != nil {
+		err = append(err, err2)
+		return err
 	}
 
-	if !found {
-		err = append(err, errors.New("Occurred some error"))
+	if res == 0 {
+		err = append(err, errors.New("dictionary owner not found"))
 	}
 
 	return err
 }
 
-func GetDictionary(UserId int) ([]error, Dictionary) {
-	var err []error
-	// userRepo.Users = append(userRepo.Users, userRepo.User{UserId: 1, Username: "puk", Email: "ehgfwe", Password: "dssf", CreatedAt: time.Now()})
-	// Dictionaries = append(Dictionaries, Dictionary{DictionaryId: 2, UserId: 1, Name: "ehgfwe", CreatedAt: time.Now()})
+func GetDictionary(UserId int) ([]Dictionary, error) {
+	var Dictionaries []Dictionary
+	dbCon := db.GetConnection()
 
-	var FinedDictionary Dictionary
+	rows, err := dbCon.Query("select * from Dictionaries where userID = ?", UserId)
 
-	for _, v := range Dictionaries {
-		if v.UserId == UserId {
-			FinedDictionary = v
-		}
+	if err != nil {
+		return nil, err
 	}
 
-	if (FinedDictionary == Dictionary{}) {
-		err = append(err, errors.New("Dictionary not found"))
+	defer rows.Close()
+
+	for rows.Next() {
+		var dict Dictionary
+		rows.Scan(&dict.DictionaryId, &dict.UserId, &dict.Name, &dict.CreatedAt, &dict.Total)
+		Dictionaries = append(Dictionaries, dict)
 	}
 
-	return err, FinedDictionary
+	if len(Dictionaries) == 0 {
+		return []Dictionary{}, nil
+	}
+
+	return Dictionaries, nil
 }
 
 func AddDictionary(dictionaryData Dictionary) []error {
 	var err []error
 
-	// userRepo.Users = append(userRepo.Users, userRepo.User{UserId: 1, Username: "puk", Email: "ehgfwe", Password: "dssf", CreatedAt: time.Now()})
+	err2 := postValidation(dictionaryData)
+	if err2 != nil {
+		err = append(err, err2...)
+	}
 
-	err = append(err, postValidation(dictionaryData)...)
-	err = append(err, checkDictionaryExistance(dictionaryData)...)
+	err3 := checkDictionaryExistance(dictionaryData)
+	if err3 != nil {
+		err = append(err, err3)
+	}
 
-	if err == nil {
-		lastElementIndex := len(Dictionaries) - 1
-		if lastElementIndex < 0 {
-			dictionaryData.DictionaryId = 0
-		} else {
-			dictionaryData.DictionaryId = Dictionaries[lastElementIndex].DictionaryId + 1
-		}
-
-		dictionaryData.CreatedAt = time.Now()
-		Dictionaries = append(Dictionaries, dictionaryData)
-
-		return nil
-	} else {
+	if err != nil {
 		return err
 	}
 
-}
+	dbCon := db.GetConnection()
 
-func DeleteDictionary(UserId int, DictionaryId string) []error {
-	var err []error
-	id, error := strconv.Atoi(DictionaryId)
+	_, err3 = dbCon.Exec("insert into Dictionaries values (default, ?, ?, CURRENT_TIMESTAMP(), default)", dictionaryData.UserId, dictionaryData.Name)
 
-	if error != nil {
-		err = append(err, errors.New("Invalid id params"))
-	}
-
-	// userRepo.Users = append(userRepo.Users, userRepo.User{UserId: 2, Username: "puk", Email: "ehgfwe", Password: "dssf", CreatedAt: time.Now()})
-	// Dictionaries = append(Dictionaries, Dictionary{DictionaryId: 2, UserId: 2, Name: "ehgfwe", CreatedAt: time.Now()})
-
-	var isDeleted = false
-	if err == nil {
-		for i, v := range Dictionaries {
-			if v.UserId == UserId && v.DictionaryId == id {
-				Dictionaries = append(Dictionaries[:i], Dictionaries[i+1:]...)
-				isDeleted = true
-				break
-			}
-		}
-		if !isDeleted {
-			err = append(err, errors.New("Dictionary not found"))
-		}
+	if err3 != nil {
+		err = append(err, err3)
 	}
 
 	return err
 }
 
-func updateValidation(dictionaryData Dictionary) []error {
-	var err []error
-	var isFieldInRequest = false
-	if len(dictionaryData.Name) != 0 {
-		isFieldInRequest = true
-	}
-	if !dictionaryData.CreatedAt.IsZero() {
-		isFieldInRequest = true
-	}
-	if !isFieldInRequest {
-		err = append(err, errors.New("Incorrect body"))
-	}
-	return err
-}
+func DeleteDictionary(UserId int, DictionaryId int) error {
+	dbCon := db.GetConnection()
 
-func UpdateDictionary(UserId int, DictionaryId string, dictionaryData Dictionary) ([]error, Dictionary) {
-	var err []error
-	id, error := strconv.Atoi(DictionaryId)
+	_, error := dbCon.Exec("delete from Dictionaries where dictionaryID = ? and userID = ?", DictionaryId, UserId)
 
 	if error != nil {
-		err = append(err, errors.New("Invalid id params"))
+		return error
 	}
 
-	err = append(err, updateValidation(dictionaryData)...)
+	return nil
+}
 
-	userRepo.Users = append(userRepo.Users, userRepo.User{UserId: 2, Username: "puk", Email: "ehgfwe", Password: "dssf", CreatedAt: time.Now()})
-	Dictionaries = append(Dictionaries, Dictionary{DictionaryId: 2, UserId: 2, Name: "dictionary", CreatedAt: time.Now()})
-
-	var UpdatedDictionary Dictionary
-	if err == nil {
-		for i, v := range Dictionaries {
-			if v.UserId == UserId && v.DictionaryId == id {
-				Dictionaries[i] = dictionaryData
-				UpdatedDictionary = Dictionaries[i]
-				break
-			}
-		}
-		if UpdatedDictionary == (Dictionary{}) {
-			err = append(err, errors.New("Dictionary not found"))
-		}
+func updateValidation(dictionaryData Dictionary) error {
+	if len(dictionaryData.Name) == 0 {
+		return errors.New("new dictionary name not supplied")
 	}
 
-	return err, UpdatedDictionary
+	return nil
+}
+
+func UpdateDictionary(UserId int, DictionaryId int, dictionaryData Dictionary) (Dictionary, error) {
+	err := updateValidation(dictionaryData)
+
+	if err != nil {
+		return Dictionary{}, err
+	}
+
+	var dictWithUserId Dictionary
+	dictWithUserId.UserId = UserId
+	dictWithUserId.Name = dictionaryData.Name
+
+	err = checkDictionaryExistance(dictWithUserId)
+	if err != nil {
+		return Dictionary{}, err
+	}
+
+	dbCon := db.GetConnection()
+
+	_, err = dbCon.Exec("update Dictionaries set name = ? where dictionaryID = ?", dictionaryData.Name, DictionaryId)
+
+	if err != nil {
+		return Dictionary{}, err
+	}
+
+	row := dbCon.QueryRow("select * from Dictionaries where dictionaryID = ?", DictionaryId)
+
+	var dict Dictionary
+
+	row.Scan(&dict.DictionaryId, &dict.UserId, &dict.Name, &dict.CreatedAt, &dict.Total)
+
+	return dict, nil
 }
