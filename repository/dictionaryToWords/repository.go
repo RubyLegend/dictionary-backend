@@ -1,6 +1,8 @@
 package dictionarytowords
 
 import (
+	"errors"
+
 	db "github.com/RubyLegend/dictionary-backend/middleware/database"
 )
 
@@ -13,6 +15,17 @@ func GetWords(DictionaryId int, page int, limit int) ([]DictionaryToWords, int, 
 	var count int
 
 	dbCon := db.GetConnection()
+
+	var exist int
+	err := dbCon.QueryRow("select count(*) from Dictionaries where dictionaryId = ?", DictionaryId).Scan(&exist)
+
+	if err != nil {
+		return []DictionaryToWords{}, -1, err
+	}
+
+	if exist != 1 {
+		return []DictionaryToWords{}, -1, errors.New("dictionary doesn't exist")
+	}
 
 	rows, err := dbCon.Query("select dw.* from DictionariesWords dw join Words w on w.wordID = dw.wordID where dictionaryID = ? order by w.createdAt desc limit ?,?",
 		DictionaryId, page*limit, limit)

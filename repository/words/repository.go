@@ -2,11 +2,8 @@ package words
 
 import (
 	"errors"
-
-	// "log"
 	"time"
-	//   "fmt"
-	//   "bytes"
+
 	"github.com/jmoiron/sqlx"
 
 	db "github.com/RubyLegend/dictionary-backend/middleware/database"
@@ -17,6 +14,19 @@ type Word struct {
 	WordId    int       `json:"id"`
 	Name      string    `json:"name"`
 	CreatedAt time.Time `json:"createdAt"`
+	IsLearned bool      `json:"isLearned"`
+}
+
+type WordWithDictId struct {
+	Name         string `json:"name"`
+	DictionaryId int    `json:"dictionaryId"`
+}
+
+func (wordData WordWithDictId) ConvertToWord() Word {
+	var word Word
+	word.Name = wordData.Name
+
+	return word
 }
 
 func checkWordExistance(word Word) error {
@@ -54,7 +64,7 @@ func WordIDtoWords(dictToWords []dictionaryToWordsRepo.DictionaryToWords) ([]Wor
 
 	dbCon := db.GetConnection()
 
-	query, args, err := sqlx.In("select * from Words where wordID in (?)", wordIds)
+	query, args, err := sqlx.In("select * from Words where wordID in (?) order by createdAt desc", wordIds)
 
 	if err != nil {
 		return nil, err
@@ -69,7 +79,7 @@ func WordIDtoWords(dictToWords []dictionaryToWordsRepo.DictionaryToWords) ([]Wor
 
 	for rows.Next() {
 		var word Word
-		err = rows.Scan(&word.WordId, &word.Name, &word.CreatedAt)
+		err = rows.Scan(&word.WordId, &word.Name, &word.CreatedAt, &word.IsLearned)
 		if err != nil {
 			return nil, err
 		}
@@ -79,29 +89,64 @@ func WordIDtoWords(dictToWords []dictionaryToWordsRepo.DictionaryToWords) ([]Wor
 	return words, nil
 }
 
-func AddWord(wordData Word) (int, error) {
+func AddWord(wordData Word) (int, Word, error) {
 
 	err := postValidation(wordData)
 
 	if err != nil {
-		return -1, err
+		return -1, Word{}, err
 	}
 
 	err = checkWordExistance(wordData)
 
 	if err != nil {
-		return -1, err
+		return -1, Word{}, err
 	}
 
 	dbCon := db.GetConnection()
 
-	res, err := dbCon.Exec("insert into Words values (default, ?, CURRENT_TIMESTAMP())", wordData.Name)
+	res, err := dbCon.Exec("insert into Words values (default, ?, CURRENT_TIMESTAMP(), default)", wordData.Name)
 
 	if err != nil {
-		return -1, err
+		return -1, Word{}, err
 	}
 
 	lastId, err := res.LastInsertId()
 
-	return int(lastId), err
+	wordData.WordId = int(lastId)
+	wordData.CreatedAt = time.Now()
+
+	return int(lastId), wordData, err
+}
+
+func UpdateWord(wordData Word) error {
+	dbCon := db.GetConnection()
+
+	res, err := dbCon.Exec("update Words set name = ? where wordId = ?", wordData.Name, wordData.WordId)
+
+	if err != nil {
+		return err
+	}
+
+	if rows, _ := res.RowsAffected(); rows == 0 {
+		return errors.New("this word doesn't exist")
+	}
+
+	return nil
+}
+
+func DeleteWord(wordData Word) error {
+	dbCon := db.GetConnection()
+
+	res, err := dbCon.Exec("delete from Words where wordId = ?", wordData.WordId)
+
+	if err != nil {
+		return err
+	}
+
+	if rows, _ := res.RowsAffected(); rows == 0 {
+		return errors.New("this word doesn't exist")
+	}
+
+	return nil
 }

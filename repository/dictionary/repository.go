@@ -2,7 +2,6 @@ package dictionary
 
 import (
 	"errors"
-	"log"
 	"time"
 
 	db "github.com/RubyLegend/dictionary-backend/middleware/database"
@@ -118,8 +117,8 @@ func AddDictionary(UserId int, dictionaryData DictionaryPost) []error {
 		return []error{err2}
 	}
 
-	for i, v := range dictionaryData.Words {
-		lastId, err2 := wordsRepo.AddWord(v)
+	for _, v := range dictionaryData.Words {
+		lastId, _, err2 := wordsRepo.AddWord(v)
 		if err2 != nil {
 			return []error{err2}
 		}
@@ -130,7 +129,6 @@ func AddDictionary(UserId int, dictionaryData DictionaryPost) []error {
 			return []error{err2}
 		}
 
-		log.Println(i, v)
 	}
 
 	return err
