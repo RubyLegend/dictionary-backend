@@ -2,6 +2,7 @@ package dictionaryRoutes
 
 import (
 	"encoding/json"
+	"math"
 	"net/http"
 	"strconv"
 
@@ -93,6 +94,9 @@ func DictionaryGetWords(w http.ResponseWriter, r *http.Request, ps httprouter.Pa
 					} else {
 						resp["words"] = words
 						resp["count"] = count
+						resp["limit"] = limit
+						resp["page"] = page
+						resp["pages"] = math.Ceil(float64(count) / float64(limit))
 					}
 				}
 			}

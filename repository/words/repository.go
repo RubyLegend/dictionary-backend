@@ -19,6 +19,18 @@ type Word struct {
 	CreatedAt time.Time `json:"createdAt"`
 }
 
+type WordWithDictId struct {
+	Name         string `json:"name"`
+	DictionaryId int    `json:"dictionaryId"`
+}
+
+func (wordData WordWithDictId) ConvertToWord() Word {
+	var word Word
+	word.Name = wordData.Name
+
+	return word
+}
+
 func checkWordExistance(word Word) error {
 	// for _, v := range WordAndDictionaryTable {
 	// 	for _, w := range Words {
@@ -54,7 +66,7 @@ func WordIDtoWords(dictToWords []dictionaryToWordsRepo.DictionaryToWords) ([]Wor
 
 	dbCon := db.GetConnection()
 
-	query, args, err := sqlx.In("select * from Words where wordID in (?)", wordIds)
+	query, args, err := sqlx.In("select * from Words where wordID in (?) order by createdAt desc", wordIds)
 
 	if err != nil {
 		return nil, err
@@ -79,18 +91,18 @@ func WordIDtoWords(dictToWords []dictionaryToWordsRepo.DictionaryToWords) ([]Wor
 	return words, nil
 }
 
-func AddWord(wordData Word) (int, error) {
+func AddWord(wordData Word) (int, Word, error) {
 
 	err := postValidation(wordData)
 
 	if err != nil {
-		return -1, err
+		return -1, Word{}, err
 	}
 
 	err = checkWordExistance(wordData)
 
 	if err != nil {
-		return -1, err
+		return -1, Word{}, err
 	}
 
 	dbCon := db.GetConnection()
@@ -98,10 +110,45 @@ func AddWord(wordData Word) (int, error) {
 	res, err := dbCon.Exec("insert into Words values (default, ?, CURRENT_TIMESTAMP())", wordData.Name)
 
 	if err != nil {
-		return -1, err
+		return -1, Word{}, err
 	}
 
 	lastId, err := res.LastInsertId()
 
-	return int(lastId), err
+	wordData.WordId = int(lastId)
+	wordData.CreatedAt = time.Now()
+
+	return int(lastId), wordData, err
+}
+
+func UpdateWord(wordData Word) error {
+	dbCon := db.GetConnection()
+
+	res, err := dbCon.Exec("update Words set name = ? where wordId = ?", wordData.Name, wordData.WordId)
+
+	if err != nil {
+		return err
+	}
+
+	if rows, _ := res.RowsAffected(); rows == 0 {
+		return errors.New("this word doesn't exist")
+	}
+
+	return nil
+}
+
+func DeleteWord(wordData Word) error {
+	dbCon := db.GetConnection()
+
+	res, err := dbCon.Exec("delete from Words where wordId = ?", wordData.WordId)
+
+	if err != nil {
+		return err
+	}
+
+	if rows, _ := res.RowsAffected(); rows == 0 {
+		return errors.New("this word doesn't exist")
+	}
+
+	return nil
 }

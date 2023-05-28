@@ -119,7 +119,7 @@ func AddDictionary(UserId int, dictionaryData DictionaryPost) []error {
 	}
 
 	for i, v := range dictionaryData.Words {
-		lastId, err2 := wordsRepo.AddWord(v)
+		lastId, _, err2 := wordsRepo.AddWord(v)
 		if err2 != nil {
 			return []error{err2}
 		}
