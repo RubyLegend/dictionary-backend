@@ -15,7 +15,7 @@ import (
 
 var secretKey = []byte("")
 
-var expirationTime = 10 // minutes
+var expirationTime = 60 // minutes
 
 var loggedOut = make([]string, 0)
 

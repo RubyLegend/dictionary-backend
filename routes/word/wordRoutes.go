@@ -11,6 +11,7 @@ import (
 )
 
 func WordGet(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+	w.Header().Set("Content-Type", "application/json")
 	cors.Setup(w, r)
 	fmt.Fprintf(w, "Not Implemented\n")
 }
@@ -30,11 +31,13 @@ func WordPost(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 }
 
 func WordDelete(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+	w.Header().Set("Content-Type", "application/json")
 	cors.Setup(w, r)
 	fmt.Fprintf(w, "Not Implemented\n")
 }
 
 func WordPatch(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+	w.Header().Set("Content-Type", "application/json")
 	cors.Setup(w, r)
 	fmt.Fprintf(w, "Not Implemented\n")
 }

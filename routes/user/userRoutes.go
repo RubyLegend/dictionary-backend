@@ -6,6 +6,7 @@ import (
 	"net/http"
 
 	"github.com/RubyLegend/dictionary-backend/middleware/cors"
+	"github.com/RubyLegend/dictionary-backend/middleware/httphelper"
 	userHelper "github.com/RubyLegend/dictionary-backend/middleware/users"
 	userRepo "github.com/RubyLegend/dictionary-backend/repository/users"
 
@@ -16,7 +17,7 @@ func UserLogin(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	w.Header().Set("Content-Type", "application/json")
 	cors.Setup(w, r)
 
-	var userData userRepo.User
+	var userData userRepo.UserLogin
 	_ = json.NewDecoder(r.Body).Decode(&userData)
 	resp := make(map[string]any)
 
@@ -24,7 +25,7 @@ func UserLogin(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 		resp["error"] = []string{"email not provided. cannot authorize"}
 		w.WriteHeader(http.StatusNotFound)
 	} else {
-		user, err := userHelper.VerifyCredentials(userData)
+		user, err := userHelper.VerifyCredentials(userData.ConvertToUser())
 		if err != nil {
 			var errors []string
 			for _, v := range err {
@@ -40,7 +41,7 @@ func UserLogin(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 				w.WriteHeader(http.StatusInternalServerError)
 			} else {
 				resp["access_token"] = token
-				resp["userData"] = user
+				httphelper.UnpackToResp(user, resp)
 				w.WriteHeader(http.StatusOK)
 			}
 		}
@@ -51,35 +52,39 @@ func UserLogin(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 func UserSignup(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	w.Header().Set("Content-Type", "application/json")
 	cors.Setup(w, r)
-	var userData userRepo.User
+	var userData userRepo.UserCreate
 	_ = json.NewDecoder(r.Body).Decode(&userData)
 	resp := make(map[string]any)
 
-	err := userRepo.AddUser(userData)
-
-	if err != nil {
-		var errors []string
-		for _, v := range err {
-			errors = append(errors, v.Error())
-		}
-
-		resp["error"] = errors
+	if userData.Password != userData.ConfirmPassword {
+		resp["error"] = []string{"passwords doesn't match"}
 		w.WriteHeader(http.StatusNotAcceptable)
 	} else {
-		resp["status"] = "User added successfully"
-		token, err := userHelper.GenerateJWT(userData.Username)
+		err := userRepo.AddUser(userData.ConvertToUser())
 
 		if err != nil {
-			resp["error"] = []string{err.Error()}
-			w.WriteHeader(http.StatusInternalServerError)
+			var errors []string
+			for _, v := range err {
+				errors = append(errors, v.Error())
+			}
+
+			resp["error"] = errors
+			w.WriteHeader(http.StatusNotAcceptable)
 		} else {
-			resp["access_token"] = token
-			resp["userData"] = userData
-			w.WriteHeader(http.StatusOK)
+			resp["status"] = "User added successfully"
+			token, err := userHelper.GenerateJWT(userData.Username)
+
+			if err != nil {
+				resp["error"] = []string{err.Error()}
+				w.WriteHeader(http.StatusInternalServerError)
+			} else {
+				resp["access_token"] = token
+				httphelper.UnpackToResp(userData, resp)
+				w.WriteHeader(http.StatusOK)
+			}
+
 		}
-
 	}
-
 	_ = json.NewEncoder(w).Encode(resp)
 }
 
@@ -108,13 +113,12 @@ func UserStatus(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 			resp["error"] = []string{err.Error()}
 			w.WriteHeader(http.StatusNotFound)
 		} else {
-			resp["claims"] = claims
 			userData.Password = ""
-			resp["userData"] = userData
+			httphelper.UnpackToResp(userData, resp)
 		}
 	}
-
 	_ = json.NewEncoder(w).Encode(resp)
+
 }
 
 func UserRestoreUsername(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {

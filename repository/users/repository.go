@@ -3,10 +3,23 @@ package users
 import (
 	"errors"
 	"log"
+	"strings"
 	"time"
 
 	db "github.com/RubyLegend/dictionary-backend/middleware/database"
 )
+
+type UserCreate struct {
+	Email           string `json:"email"`
+	Username        string `json:"username"`
+	Password        string `json:"password"`
+	ConfirmPassword string `json:"confirmPassword"`
+}
+
+type UserLogin struct {
+	Email    string `json:"email"`
+	Password string `json:"password"`
+}
 
 type User struct {
 	UserId    int       `json:"userId"`
@@ -109,6 +122,23 @@ func findUser(params ...interface{}) (interface{}, error) {
 			return nil, errors.New("unknown parameter passed")
 		}
 	}
+}
+
+func (userData UserCreate) ConvertToUser() User {
+	var user User
+	user.Username = userData.Username
+	user.Email = strings.ToLower(userData.Email)
+	user.Password = userData.Password
+
+	return user
+}
+
+func (userData UserLogin) ConvertToUser() User {
+	var user User
+	user.Email = strings.ToLower(userData.Email)
+	user.Password = userData.Password
+
+	return user
 }
 
 func GetUser(userData User) (User, error) {
