@@ -2,7 +2,6 @@ package users
 
 import (
 	"errors"
-	"log"
 	"strings"
 	"time"
 
@@ -145,7 +144,6 @@ func GetUser(userData User) (User, error) {
 	user, err := findUser(userData)
 
 	if err != nil {
-		log.Println(err)
 		return User{}, err
 	}
 

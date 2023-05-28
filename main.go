@@ -37,16 +37,16 @@ func main() {
 		cors.Setup(w, r)
 	}) // done
 
+	router.GET("/api/v1/word", wordRoutes.WordGet)
 	router.POST("/api/v1/word", wordRoutes.WordPost)
 	router.OPTIONS("/api/v1/word", func(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 		cors.Setup(w, r)
 	}) // done
 	router.DELETE("/api/v1/word/:id", wordRoutes.WordDelete)
+	router.PATCH("/api/v1/word/:id", wordRoutes.WordPatch)
 	router.OPTIONS("/api/v1/word/:id", func(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 		cors.Setup(w, r)
 	}) // done
-	router.GET("/api/v1/word", wordRoutes.WordGet)
-	router.PATCH("/api/v1/word/:id", wordRoutes.WordPatch)
 
 	router.POST("/api/v1/translation", translationRoutes.TranslationPost)
 	router.DELETE("/api/v1/translation/:id", translationRoutes.TranslationDelete)
