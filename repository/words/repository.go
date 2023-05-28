@@ -82,7 +82,10 @@ func WordIDtoWords(dictToWords []dictionaryToWordsRepo.DictionaryToWords) ([]Wor
 
 	for rows.Next() {
 		var word Word
-		rows.Scan(&word.WordId, &word.Name, &word.CreatedAt)
+		err = rows.Scan(&word.WordId, &word.Name, &word.CreatedAt)
+		if err != nil {
+			return nil, err
+		}
 		words = append(words, word)
 	}
 

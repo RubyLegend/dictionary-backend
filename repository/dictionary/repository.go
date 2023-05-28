@@ -71,7 +71,10 @@ func GetDictionary(UserId int) ([]Dictionary, error) {
 
 	for rows.Next() {
 		var dict Dictionary
-		rows.Scan(&dict.DictionaryId, &dict.UserId, &dict.Name, &dict.CreatedAt, &dict.Total)
+		err = rows.Scan(&dict.DictionaryId, &dict.UserId, &dict.Name, &dict.CreatedAt, &dict.Total)
+		if err != nil {
+			return nil, err
+		}
 		Dictionaries = append(Dictionaries, dict)
 	}
 
@@ -158,7 +161,11 @@ func UpdateDictionary(UserId int, DictionaryId int, dictionaryData Dictionary) (
 
 	var dict Dictionary
 
-	row.Scan(&dict.DictionaryId, &dict.UserId, &dict.Name, &dict.CreatedAt, &dict.Total)
+	err = row.Scan(&dict.DictionaryId, &dict.UserId, &dict.Name, &dict.CreatedAt, &dict.Total)
+
+	if err != nil {
+		return Dictionary{}, err
+	}
 
 	return dict, nil
 }

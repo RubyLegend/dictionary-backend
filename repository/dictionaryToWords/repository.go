@@ -22,7 +22,10 @@ func GetWords(DictionaryId int) ([]DictionaryToWords, error) {
 
 	for rows.Next() {
 		var word DictionaryToWords
-		rows.Scan(&word.DictionaryId, &word.WordId)
+		err = rows.Scan(&word.DictionaryId, &word.WordId)
+		if err != nil {
+			return nil, err
+		}
 		res = append(res, word)
 	}
 
