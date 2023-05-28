@@ -5,59 +5,76 @@ import (
 	"net/http"
 	"strconv"
 
+	"github.com/RubyLegend/dictionary-backend/middleware/cors"
+	userHelper "github.com/RubyLegend/dictionary-backend/middleware/users"
 	historyRepo "github.com/RubyLegend/dictionary-backend/repository/history"
+	userRepo "github.com/RubyLegend/dictionary-backend/repository/users"
 	"github.com/julienschmidt/httprouter"
 )
 
 func HistoryGet(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	w.Header().Set("Content-Type", "application/json")
-	var historyId int = 1
+	cors.Setup(w, r)
+	resp := make(map[string]any)
 
-	resp := make(map[string]interface{})
+	claims := userHelper.VerifyJWT(w, r, resp)
+	if resp["error"] == nil {
+		var userData userRepo.User
+		userData.Username = claims["username"].(string)
+		userData, err := userRepo.GetUser(userData)
 
-	errors, history := historyRepo.GetHistory(historyId)
+		if err != nil {
+			resp["error"] = []string{err.Error()}
+			_ = json.NewEncoder(w).Encode(resp)
+			w.WriteHeader(http.StatusNotFound)
+		} else {
+			history, err := historyRepo.GetHistory(userData.UserId)
 
-	if len(errors) > 0 {
-		var errorMessages []string
-		for _, v := range errors {
-			errorMessages = append(errorMessages, v.Error())
+			if err != nil {
+				resp["error"] = []string{err.Error()}
+				_ = json.NewEncoder(w).Encode(resp)
+				w.WriteHeader(http.StatusBadRequest)
+			} else {
+				resp["history"] = history
+				_ = json.NewEncoder(w).Encode(history)
+			}
 		}
-		resp["error"] = errorMessages
-		w.WriteHeader(http.StatusBadRequest)
 	} else {
-		resp["history"] = history
-		w.WriteHeader(http.StatusOK)
+		_ = json.NewEncoder(w).Encode(resp)
 	}
-
-	_ = json.NewEncoder(w).Encode(resp)
 }
 
-func HistoryDelete(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
+func HistoryDelete(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	w.Header().Set("Content-Type", "application/json")
-	resp := make(map[string]interface{})
+	cors.Setup(w, r)
+	resp := make(map[string]any)
 
-	var UserId int = 1
-	HistoryId := p.ByName("id")
+	claims := userHelper.VerifyJWT(w, r, resp)
+	if resp["error"] == nil {
+		var userData userRepo.User
+		userData.Username = claims["username"].(string)
+		userData, err := userRepo.GetUser(userData)
 
-	historyId, err := strconv.Atoi(HistoryId)
-	if err != nil {
-		resp["error"] = []string{"Invalid history ID"}
-		w.WriteHeader(http.StatusBadRequest)
-		_ = json.NewEncoder(w).Encode(resp)
-		return
-	}
-	errors := historyRepo.DeleteHistory(UserId, historyId)
+		if err != nil {
+			resp["error"] = []string{err.Error()}
+			w.WriteHeader(http.StatusNotFound)
+		} else {
+			HistoryId, err := strconv.Atoi(ps.ByName("id"))
 
-	if len(errors) > 0 {
-		var errorMessages []string
-		for _, v := range errors {
-			errorMessages = append(errorMessages, v.Error())
+			if err != nil {
+				resp["error"] = []string{err.Error()}
+			} else {
+
+				errors := historyRepo.DeleteHistory(userData.UserId, HistoryId)
+
+				if errors != nil {
+					resp["error"] = []string{errors.Error()}
+					w.WriteHeader(http.StatusBadRequest)
+				} else {
+					w.WriteHeader(http.StatusOK)
+				}
+			}
 		}
-		resp["error"] = errorMessages
-		w.WriteHeader(http.StatusBadRequest)
-	} else {
-		w.WriteHeader(http.StatusOK)
 	}
-
 	_ = json.NewEncoder(w).Encode(resp)
 }
