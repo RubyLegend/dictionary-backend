@@ -27,19 +27,23 @@ func DictionaryGet(w http.ResponseWriter, r *http.Request, _ httprouter.Params) 
 
 		if err != nil {
 			resp["error"] = []string{err.Error()}
+			_ = json.NewEncoder(w).Encode(resp)
 			w.WriteHeader(http.StatusNotFound)
 		} else {
 			dictionary, err := dictionaryRepo.GetDictionary(userData.UserId)
 
 			if err != nil {
 				resp["error"] = []string{err.Error()}
+				_ = json.NewEncoder(w).Encode(resp)
 				w.WriteHeader(http.StatusBadRequest)
 			} else {
 				resp["dictionary"] = dictionary
+				_ = json.NewEncoder(w).Encode(dictionary)
 			}
 		}
+	} else {
+		_ = json.NewEncoder(w).Encode(resp)
 	}
-	_ = json.NewEncoder(w).Encode(resp)
 }
 
 func DictionaryGetWords(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
