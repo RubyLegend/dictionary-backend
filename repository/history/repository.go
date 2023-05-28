@@ -50,12 +50,12 @@ func GetHistory(UserId int) ([]History, error) {
 	defer rows.Close()
 
 	for rows.Next() {
-		var dict History
-		err = rows.Scan(&dict.HistoryId, &dict.UserId, &dict.WordId, &dict.IsCorrect, &dict.CreatedAt)
+		var hist History
+		err = rows.Scan(&hist.HistoryId, &hist.UserId, &hist.WordId, &hist.IsCorrect, &hist.CreatedAt)
 		if err != nil {
 			return nil, err
 		}
-		Histories = append(Histories, dict)
+		Histories = append(Histories, hist)
 	}
 
 	if len(Histories) == 0 {
