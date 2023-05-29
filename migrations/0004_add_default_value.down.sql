@@ -1,0 +1,1 @@
+alter table Dictionaries modify column total int not null;
