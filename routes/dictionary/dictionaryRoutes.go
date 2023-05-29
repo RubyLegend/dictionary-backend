@@ -95,7 +95,7 @@ func DictionaryGetWords(w http.ResponseWriter, r *http.Request, ps httprouter.Pa
 						resp["words"] = words
 						resp["count"] = count
 						resp["limit"] = limit
-						resp["page"] = page
+						resp["page"] = page + 1
 						resp["pages"] = math.Ceil(float64(count) / float64(limit))
 					}
 				}

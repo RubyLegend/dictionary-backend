@@ -45,14 +45,15 @@ func GetWords(DictionaryId int, page int, limit int) ([]DictionaryToWords, int, 
 		res = append(res, word)
 	}
 
-	if len(res) == 0 {
-		return []DictionaryToWords{}, 0, nil
-	}
-
 	err = dbCon.QueryRow("select count(*) from DictionariesWords where dictionaryID = ?", DictionaryId).Scan(&count)
 
 	if err != nil {
 		return nil, 0, err
+	}
+
+	if count == 0 {
+		return []DictionaryToWords{}, 0, nil
+
 	}
 
 	return res, count, nil
