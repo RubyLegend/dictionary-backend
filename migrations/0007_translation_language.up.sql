@@ -1,0 +1,1 @@
+alter table Translation modify column language varchar(45) not null default "English";
