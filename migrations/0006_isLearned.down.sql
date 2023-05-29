@@ -1,0 +1,1 @@
+alter table Words drop column isLearned;

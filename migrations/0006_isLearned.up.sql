@@ -1,0 +1,1 @@
+alter table Words add column isLearned boolean not null default false;
