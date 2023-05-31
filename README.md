@@ -40,13 +40,13 @@ Replace the `username`, `password`, and `database_name` values with your MySQL d
 5. Run the database migrations to create the required tables:
 
 ```go
-go run cmd/migrate/main.go up
+go run migrations/main.go up
 ```
 
 6. Start the server:
 
 ```go
-go run cmd/server/main.go
+go run main.go
 ```
 
 The server will start running on http://localhost:8080.
