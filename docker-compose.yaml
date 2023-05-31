@@ -1,0 +1,13 @@
+version: "3"
+
+services:
+  dictionary:
+    restart: always
+    build:
+      context: .
+      dockerfile: Dockerfile
+    volumes: ["./.:/app/."]
+    environment:
+      PORT: 8080
+    ports:
+      - "80:8080"

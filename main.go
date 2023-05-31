@@ -23,7 +23,7 @@ import (
 func main() {
 	err := godotenv.Load()
 	if err != nil {
-		log.Fatal("Error loading .env file")
+		log.Println("Error loading .env file. Using global variables.")
 	}
 
 	// Connecting to database
@@ -101,9 +101,15 @@ func main() {
 		cors.Setup(w, r)
 	}) // done
 
-	router.GET("/api/v1/quiz/new", quizRoutes.QuizGetNew)
-	router.POST("/api/v1/quiz/:quizId", quizRoutes.QuizPost)
-	router.GET("/api/v1/quiz/status", quizRoutes.QuizGetStatus)
+	router.POST("/api/v1/quiz", quizRoutes.QuizPostNewQuizWords)
+	router.OPTIONS("/api/v1/quiz", func(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+		cors.Setup(w, r)
+	}) // done
+	router.POST("/api/v1/quiz/:quizID", quizRoutes.QuizPostVerifyWord)
+	router.GET("/api/v1/quiz/:quizID", quizRoutes.QuizGetNewWord)
+	router.OPTIONS("/api/v1/quiz/:quizID", func(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+		cors.Setup(w, r)
+	}) // done
 
 	// Just for now logout monitor will detach to it's own thread here
 	go userHelper.LogoutMonitor()
