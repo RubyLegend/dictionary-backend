@@ -4,14 +4,81 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strings"
 
 	"github.com/RubyLegend/dictionary-backend/middleware/cors"
 	"github.com/RubyLegend/dictionary-backend/middleware/httphelper"
 	userHelper "github.com/RubyLegend/dictionary-backend/middleware/users"
 	userRepo "github.com/RubyLegend/dictionary-backend/repository/users"
+	"github.com/golang-jwt/jwt/v5"
 
 	"github.com/julienschmidt/httprouter"
 )
+
+type userHelperWrapper interface {
+	GenerateJWT(string) (string, error)
+	VerifyCredentials(userRepo.User) (userRepo.User, []error)
+	VerifyAuthorizationToken(string) bool
+	VerifyJWT(http.ResponseWriter, *http.Request, map[string]any) jwt.MapClaims
+	LogoutJWT(http.ResponseWriter, *http.Request, map[string]any)
+}
+
+type userHelpWrap struct{}
+
+func (u userHelpWrap) GenerateJWT(username string) (string, error) {
+	return userHelper.GenerateJWT(username)
+}
+
+func (u userHelpWrap) VerifyAuthorizationToken(tokenString string) bool {
+	return userHelper.VerifyAuthorizationToken(tokenString)
+}
+
+func (u userHelpWrap) VerifyJWT(w http.ResponseWriter, r *http.Request, resp map[string]any) jwt.MapClaims {
+	return userHelper.VerifyJWT(w, r, resp)
+}
+
+func (u userHelpWrap) LogoutJWT(w http.ResponseWriter, r *http.Request, resp map[string]any) {
+	userHelper.LogoutJWT(w, r, resp)
+}
+
+func (u userHelpWrap) VerifyCredentials(userData userRepo.User) (userRepo.User, []error) {
+	return userHelper.VerifyCredentials(userData)
+}
+
+type userRepoWrapper interface {
+	GetUser(userRepo.User) (userRepo.User, error)
+	AddUser(userRepo.User) []error
+	DeleteUser(userRepo.User) error
+	EditUser(string, userRepo.User) []error
+}
+
+type userRepoWrap struct{}
+
+func (u userRepoWrap) GetUser(userData userRepo.User) (userRepo.User, error) {
+	return userRepo.GetUser(userData)
+}
+
+func (u userRepoWrap) AddUser(userData userRepo.User) []error {
+	return userRepo.AddUser(userData)
+}
+
+func (u userRepoWrap) DeleteUser(userData userRepo.User) error {
+	return userRepo.DeleteUser(userData)
+}
+
+func (u userRepoWrap) EditUser(currentUsername string, userData userRepo.User) []error {
+	return userRepo.EditUser(currentUsername, userData)
+}
+
+var (
+	userHelp  userHelperWrapper
+	userRepoW userRepoWrapper
+)
+
+func init() {
+	userHelp = userHelpWrap{}
+	userRepoW = userRepoWrap{}
+}
 
 func UserLogin(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	w.Header().Set("Content-Type", "application/json")
@@ -25,7 +92,8 @@ func UserLogin(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 		resp["error"] = []string{"email not provided. cannot authorize"}
 		w.WriteHeader(http.StatusNotFound)
 	} else {
-		user, err := userHelper.VerifyCredentials(userData.ConvertToUser())
+		userData.Email = strings.ToLower(userData.Email)
+		user, err := userHelp.VerifyCredentials(userData.ConvertToUser())
 		if err != nil {
 			var errors []string
 			for _, v := range err {
@@ -34,7 +102,7 @@ func UserLogin(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 			resp["error"] = errors
 			w.WriteHeader(http.StatusForbidden)
 		} else {
-			token, err := userHelper.GenerateJWT(user.Username)
+			token, err := userHelp.GenerateJWT(user.Username)
 
 			if err != nil {
 				resp["error"] = []string{err.Error()}
@@ -60,7 +128,7 @@ func UserSignup(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 		resp["error"] = []string{"passwords doesn't match"}
 		w.WriteHeader(http.StatusNotAcceptable)
 	} else {
-		err := userRepo.AddUser(userData.ConvertToUser())
+		err := userRepoW.AddUser(userData.ConvertToUser())
 
 		if err != nil {
 			var errors []string
@@ -72,7 +140,7 @@ func UserSignup(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 			w.WriteHeader(http.StatusNotAcceptable)
 		} else {
 			resp["status"] = "User added successfully"
-			token, err := userHelper.GenerateJWT(userData.Username)
+			token, err := userHelp.GenerateJWT(userData.Username)
 
 			if err != nil {
 				resp["error"] = []string{err.Error()}
@@ -93,7 +161,7 @@ func UserLogout(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	cors.Setup(w, r)
 	resp := make(map[string]any)
 
-	userHelper.LogoutJWT(w, r, resp)
+	userHelp.LogoutJWT(w, r, resp)
 
 	_ = json.NewEncoder(w).Encode(resp)
 }
@@ -104,10 +172,10 @@ func UserStatus(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	var userData userRepo.User
 	resp := make(map[string]any)
 
-	claims := userHelper.VerifyJWT(w, r, resp)
+	claims := userHelp.VerifyJWT(w, r, resp)
 	if resp["error"] == nil {
 		userData.Username = claims["username"].(string)
-		userData, err := userRepo.GetUser(userData)
+		userData, err := userRepoW.GetUser(userData)
 
 		if err != nil {
 			resp["error"] = []string{err.Error()}
@@ -137,11 +205,11 @@ func UserDelete(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	var userData userRepo.User
 	resp := make(map[string]any)
 
-	claims := userHelper.VerifyJWT(w, r, resp)
+	claims := userHelp.VerifyJWT(w, r, resp)
 
 	if resp["error"] == nil {
 		userData.Username = claims["username"].(string)
-		err := userRepo.DeleteUser(userData)
+		err := userRepoW.DeleteUser(userData)
 
 		if err == nil {
 			resp["status"] = "Success"
@@ -161,22 +229,23 @@ func UserPatch(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	_ = json.NewDecoder(r.Body).Decode(&userData)
 	resp := make(map[string]any)
 
-	claims := userHelper.VerifyJWT(w, r, resp)
+	claims := userHelp.VerifyJWT(w, r, resp)
 
 	if resp["error"] == nil {
 		username := claims["username"].(string)
-		err := userRepo.EditUser(username, userData)
+		err := userRepoW.EditUser(username, userData)
 
 		if err == nil {
 			resp["status"] = "Success"
-			userHelper.LogoutJWT(w, r, resp)
-			token, err := userHelper.GenerateJWT(userData.Username)
+			userHelp.LogoutJWT(w, r, resp)
+			token, err := userHelp.GenerateJWT(userData.Username)
 
 			if err != nil {
+				resp["status"] = "Failed"
 				resp["error"] = []string{err.Error()}
 				w.WriteHeader(http.StatusBadGateway)
 			} else {
-				resp["token"] = token
+				resp["access_token"] = token
 				w.WriteHeader(http.StatusOK)
 			}
 
