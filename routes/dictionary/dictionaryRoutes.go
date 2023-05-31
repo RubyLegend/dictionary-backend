@@ -11,32 +11,114 @@ import (
 	dictionaryRepo "github.com/RubyLegend/dictionary-backend/repository/dictionary"
 	dictionaryToWordsRepo "github.com/RubyLegend/dictionary-backend/repository/dictionaryToWords"
 	userRepo "github.com/RubyLegend/dictionary-backend/repository/users"
-	wordsRepo "github.com/RubyLegend/dictionary-backend/repository/words"
+	wordRepo "github.com/RubyLegend/dictionary-backend/repository/words"
+	jwt "github.com/golang-jwt/jwt/v5"
 	"github.com/julienschmidt/httprouter"
 )
+
+type userHelperWrapper interface {
+	VerifyJWT(http.ResponseWriter, *http.Request, map[string]any) jwt.MapClaims
+}
+
+type userHelpWrap struct{}
+
+func (u userHelpWrap) VerifyJWT(w http.ResponseWriter, r *http.Request, resp map[string]any) jwt.MapClaims {
+	return userHelper.VerifyJWT(w, r, resp)
+}
+
+type userRepoWrapper interface {
+	GetUser(userRepo.User) (userRepo.User, error)
+}
+
+type userRepoWrap struct{}
+
+func (u userRepoWrap) GetUser(userData userRepo.User) (userRepo.User, error) {
+	return userRepo.GetUser(userData)
+}
+
+type dictionaryRepoWrapper interface {
+	GetDictionary(int) ([]dictionaryRepo.Dictionary, error)
+	AddDictionary(int, dictionaryRepo.DictionaryPost) []error
+	DeleteDictionary(int, int) error
+	UpdateDictionary(int, int, dictionaryRepo.Dictionary) (dictionaryRepo.Dictionary, error)
+}
+
+type dictionaryRepoWrap struct{}
+
+func (d dictionaryRepoWrap) GetDictionary(UserId int) ([]dictionaryRepo.Dictionary, error) {
+	return dictionaryRepo.GetDictionary(UserId)
+}
+
+func (d dictionaryRepoWrap) AddDictionary(UserId int, dictionaryData dictionaryRepo.DictionaryPost) []error {
+	return dictionaryRepo.AddDictionary(UserId, dictionaryData)
+}
+
+func (d dictionaryRepoWrap) DeleteDictionary(UserId int, DictionaryId int) error {
+	return dictionaryRepo.DeleteDictionary(UserId, DictionaryId)
+}
+
+func (d dictionaryRepoWrap) UpdateDictionary(UserId int, DictionaryId int, dictionaryData dictionaryRepo.Dictionary) (dictionaryRepo.Dictionary, error) {
+	return dictionaryRepo.UpdateDictionary(UserId, DictionaryId, dictionaryData)
+}
+
+type dictionaryToWordsRepoWrapper interface {
+	GetWords(int, int, int) ([]dictionaryToWordsRepo.DictionaryToWords, int, error)
+}
+
+type wordRepoWrapper interface {
+	WordIDtoWords([]dictionaryToWordsRepo.DictionaryToWords) ([]wordRepo.Word, error)
+}
+
+type dtwrWrap struct{}
+
+func (d dtwrWrap) GetWords(DictionaryId int, page int, limit int) ([]dictionaryToWordsRepo.DictionaryToWords, int, error) {
+	return dictionaryToWordsRepo.GetWords(DictionaryId, page, limit)
+}
+
+type wrWrap struct{}
+
+func (w wrWrap) WordIDtoWords(dictToWords []dictionaryToWordsRepo.DictionaryToWords) ([]wordRepo.Word, error) {
+	return wordRepo.WordIDtoWords(dictToWords)
+}
+
+var (
+	userHelp  userHelperWrapper
+	userRepoW userRepoWrapper
+	drW       dictionaryRepoWrapper
+	dtwr      dictionaryToWordsRepoWrapper
+	wr        wordRepoWrapper
+)
+
+func init() {
+	userHelp = userHelpWrap{}
+	userRepoW = userRepoWrap{}
+	drW = dictionaryRepoWrap{}
+	dtwr = dtwrWrap{}
+	wr = wrWrap{}
+}
 
 func DictionaryGet(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	w.Header().Set("Content-Type", "application/json")
 	cors.Setup(w, r)
 	resp := make(map[string]any)
 
-	claims := userHelper.VerifyJWT(w, r, resp)
+	claims := userHelp.VerifyJWT(w, r, resp)
 	if resp["error"] == nil {
 		var userData userRepo.User
 		userData.Username = claims["username"].(string)
-		userData, err := userRepo.GetUser(userData)
+		userData, err := userRepoW.GetUser(userData)
 
 		if err != nil {
 			resp["error"] = []string{err.Error()}
-			_ = json.NewEncoder(w).Encode(resp)
 			w.WriteHeader(http.StatusNotFound)
+			_ = json.NewEncoder(w).Encode(resp)
 		} else {
-			dictionary, err := dictionaryRepo.GetDictionary(userData.UserId)
+			dictionary, err := drW.GetDictionary(userData.UserId)
 
 			if err != nil {
 				resp["error"] = []string{err.Error()}
-				_ = json.NewEncoder(w).Encode(resp)
 				w.WriteHeader(http.StatusBadRequest)
+				_ = json.NewEncoder(w).Encode(resp)
 			} else {
 				resp["dictionary"] = dictionary
 				_ = json.NewEncoder(w).Encode(dictionary)
@@ -52,7 +134,7 @@ func DictionaryGetWords(w http.ResponseWriter, r *http.Request, ps httprouter.Pa
 	cors.Setup(w, r)
 	resp := make(map[string]any)
 
-	claims := userHelper.VerifyJWT(w, r, resp)
+	claims := userHelp.VerifyJWT(w, r, resp)
 	if resp["error"] == nil {
 		page, err := strconv.Atoi(r.URL.Query().Get("page"))
 
@@ -70,7 +152,7 @@ func DictionaryGetWords(w http.ResponseWriter, r *http.Request, ps httprouter.Pa
 
 		var userData userRepo.User
 		userData.Username = claims["username"].(string)
-		userData, err = userRepo.GetUser(userData)
+		userData, err = userRepoW.GetUser(userData)
 
 		if err != nil {
 			resp["error"] = []string{err.Error()}
@@ -80,14 +162,15 @@ func DictionaryGetWords(w http.ResponseWriter, r *http.Request, ps httprouter.Pa
 
 			if err != nil {
 				resp["error"] = []string{err.Error()}
+				w.WriteHeader(http.StatusBadRequest)
 			} else {
-				wordIds, count, err := dictionaryToWordsRepo.GetWords(DictionaryId, page, limit)
+				wordIds, count, err := dtwr.GetWords(DictionaryId, page, limit)
 
 				if err != nil {
 					resp["error"] = []string{err.Error()}
 					w.WriteHeader(http.StatusBadRequest)
 				} else {
-					words, err := wordsRepo.WordIDtoWords(wordIds)
+					words, err := wr.WordIDtoWords(wordIds)
 					if err != nil {
 						resp["error"] = []string{err.Error()}
 						w.WriteHeader(http.StatusInternalServerError)
@@ -112,17 +195,17 @@ func DictionaryPost(w http.ResponseWriter, r *http.Request, _ httprouter.Params)
 	_ = json.NewDecoder(r.Body).Decode(&dictionaryData)
 	resp := make(map[string]any)
 
-	claims := userHelper.VerifyJWT(w, r, resp)
+	claims := userHelp.VerifyJWT(w, r, resp)
 	if resp["error"] == nil {
 		var userData userRepo.User
 		userData.Username = claims["username"].(string)
-		userData, err := userRepo.GetUser(userData)
+		userData, err := userRepoW.GetUser(userData)
 
 		if err != nil {
 			resp["error"] = []string{err.Error()}
 			w.WriteHeader(http.StatusNotFound)
 		} else {
-			err := dictionaryRepo.AddDictionary(userData.UserId, dictionaryData)
+			err := drW.AddDictionary(userData.UserId, dictionaryData)
 			if err != nil {
 				var errors []string
 				for _, v := range err {
@@ -145,11 +228,11 @@ func DictionaryPatch(w http.ResponseWriter, r *http.Request, ps httprouter.Param
 	cors.Setup(w, r)
 	resp := make(map[string]any)
 
-	claims := userHelper.VerifyJWT(w, r, resp)
+	claims := userHelp.VerifyJWT(w, r, resp)
 	if resp["error"] == nil {
 		var userData userRepo.User
 		userData.Username = claims["username"].(string)
-		userData, err := userRepo.GetUser(userData)
+		userData, err := userRepoW.GetUser(userData)
 
 		if err != nil {
 			resp["error"] = []string{err.Error()}
@@ -159,12 +242,13 @@ func DictionaryPatch(w http.ResponseWriter, r *http.Request, ps httprouter.Param
 
 			if err != nil {
 				resp["error"] = []string{err.Error()}
+				w.WriteHeader(http.StatusInternalServerError)
 			} else {
 
 				var dictionaryData dictionaryRepo.Dictionary
 				_ = json.NewDecoder(r.Body).Decode(&dictionaryData)
 
-				dict, errors := dictionaryRepo.UpdateDictionary(userData.UserId, DictionaryId, dictionaryData)
+				dict, errors := drW.UpdateDictionary(userData.UserId, DictionaryId, dictionaryData)
 
 				if errors != nil {
 					resp["error"] = []string{errors.Error()}
@@ -184,11 +268,11 @@ func DictionaryDelete(w http.ResponseWriter, r *http.Request, ps httprouter.Para
 	cors.Setup(w, r)
 	resp := make(map[string]any)
 
-	claims := userHelper.VerifyJWT(w, r, resp)
+	claims := userHelp.VerifyJWT(w, r, resp)
 	if resp["error"] == nil {
 		var userData userRepo.User
 		userData.Username = claims["username"].(string)
-		userData, err := userRepo.GetUser(userData)
+		userData, err := userRepoW.GetUser(userData)
 
 		if err != nil {
 			resp["error"] = []string{err.Error()}
@@ -198,14 +282,16 @@ func DictionaryDelete(w http.ResponseWriter, r *http.Request, ps httprouter.Para
 
 			if err != nil {
 				resp["error"] = []string{err.Error()}
+				w.WriteHeader(http.StatusInternalServerError)
 			} else {
 
-				errors := dictionaryRepo.DeleteDictionary(userData.UserId, DictionaryId)
+				errors := drW.DeleteDictionary(userData.UserId, DictionaryId)
 
 				if errors != nil {
 					resp["error"] = []string{errors.Error()}
 					w.WriteHeader(http.StatusBadRequest)
 				} else {
+					resp["status"] = "success"
 					w.WriteHeader(http.StatusOK)
 				}
 			}
